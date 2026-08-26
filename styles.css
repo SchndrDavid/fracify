@@ -383,11 +383,15 @@ input[type='range'] {
   overflow: hidden;
   background: rgba(0, 0, 0, 0.4);
   border: 1px solid var(--edge);
-  display: grid;
-  place-items: center;
+  /* Flex, not grid: an auto-sized grid track grows to the intrinsic 1080 px
+     of the preview, which makes the child's max-width:100% resolve against
+     itself and lets the page overflow sideways on a phone. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
   min-height: 220px;
 }
-.stage svg { display: block; width: 100%; height: auto; }
+.stage svg { display: block; width: 100%; height: auto; max-width: 100%; min-width: 0; }
 
 .actions { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
 .export-status { font-size: 12.5px; margin-top: 8px; min-height: 18px; }
@@ -435,7 +439,9 @@ input[type='range'] {
   .editor { grid-template-columns: minmax(0, 1fr); }
   .pane-preview { order: -1; padding: 12px; }
   .preview-sticky { position: static; }
-  .stage svg { max-height: 52vh; width: auto; max-width: 100%; }
+  /* min-width:0 matters: a replaced element in a grid keeps its intrinsic
+     width otherwise, and a 1080 px wide preview runs off a phone screen. */
+  .stage svg { width: auto; height: auto; max-width: 100%; max-height: 56vh; min-width: 0; }
   .stage { padding: 6px; }
 }
 
