@@ -1,0 +1,7 @@
+FOREMAN-REPO-TEMPLATE.txt
+.env
+.fidelity/
+.fontcache/
+__pycache__/
+*.pyc
+.DS_Store

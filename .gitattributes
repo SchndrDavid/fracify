@@ -1,0 +1,8 @@
+# Keep everything with LF in the repository.
+* text=auto eol=lf
+
+# Machine-generated exports: never touch them, never try to diff them.
+*.svg -text
+*.woff2 binary
+*.jpg binary
+*.png binary
