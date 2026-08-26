@@ -147,10 +147,25 @@ at all is a failure. `--stress` additionally renders every text slot filled with
 a sentence far too long for it, which is the quickest way to see wrapping,
 shrinking and overflow behave.
 
-Photos are cropped to fill their slot from the centre, never letterboxed, and
-are resized to the slot's own dimensions before being embedded — a 12 Mpx phone
-photo would otherwise add a third again as much base64 to the file. The slider
-next to each photo shifts the crop up or down, which portraits usually need.
+## Photos
+
+A photo is cropped to fill its slot, never letterboxed, and resized to the
+slot's own dimensions before being embedded — a 12 Mpx phone photo would
+otherwise add a third again as much base64 to the file. Four sliders decide what
+you actually see:
+
+| Slider | Range | What it does |
+| --- | --- | --- |
+| X | −100…100 % | slides the crop left or right, if the framing leaves any slack |
+| Y | −100…100 % | the same vertically, which portraits usually need |
+| Zoom | 100…250 % | pushes in past the fill, which is what creates the slack for X and Y |
+| Blur | 0…40 px | softens the photo behind the panel so the text on top stays readable |
+
+Blur is drawn into the bitmap rather than layered over it, and the crop is
+rendered with a margin of three times the radius that is thrown away afterwards,
+so the faded edge a blur leaves behind never reaches the canvas. Where the
+browser has no canvas `filter` — Safari before 17 — it falls back to a
+downscale-and-upscale that looks the same behind a panel.
 
 ## Known quirk
 

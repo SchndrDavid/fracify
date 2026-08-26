@@ -277,7 +277,11 @@
       imageIndex: raw.imageIndex,
       width: Math.round(len(image.getAttribute('width'), 1080)),
       height: Math.round(len(image.getAttribute('height'), 1080)),
-      offset: 0,
+      offsetX: 0,
+      offsetY: 0,
+      zoom: 100,
+      blur: 0,
+      frame: 0,
       source: null,
       persistUrl: null,
       fileName: ''
@@ -520,24 +524,97 @@
     return canvas;
   }
 
+  var canvasFilter = null;
+
+  function supportsCanvasFilter() {
+    if (canvasFilter === null) {
+      var ctx = document.createElement('canvas').getContext('2d');
+      try {
+        ctx.filter = 'blur(2px)';
+        canvasFilter = ctx.filter === 'blur(2px)';
+      } catch (err) {
+        canvasFilter = false;
+      }
+    }
+    return canvasFilter;
+  }
+
+  function drawBlurred(ctx, source, x, y, width, height, blur) {
+    if (!blur) {
+      ctx.drawImage(source, x, y, width, height);
+      return;
+    }
+    if (supportsCanvasFilter()) {
+      ctx.filter = 'blur(' + blur + 'px)';
+      ctx.drawImage(source, x, y, width, height);
+      ctx.filter = 'none';
+      return;
+    }
+    // Safari before 17 has no canvas filter. Going down to a small canvas and
+    // letting the upscale smooth it back out is not a Gaussian, but for a
+    // background sitting behind a panel it is indistinguishable.
+    var factor = Math.max(1, blur / 1.5);
+    var small = document.createElement('canvas');
+    small.width = Math.max(1, Math.round(width / factor));
+    small.height = Math.max(1, Math.round(height / factor));
+    var reduced = small.getContext('2d');
+    reduced.imageSmoothingQuality = 'high';
+    reduced.drawImage(source, 0, 0, small.width, small.height);
+    ctx.drawImage(small, x, y, width, height);
+  }
+
   /* Centre-crop and fill, never letterbox: the aspect ratio of an upload
    * practically never matches the slot, and empty margins always look wrong.
-   * The slider shifts the crop up or down, which portraits usually need. */
+   * Zoom pushes in past that fit and the two offsets slide the visible window
+   * around inside the slack it leaves, so the part of the photo worth showing
+   * can be put where the design leaves room for it.
+   *
+   * Blur is drawn into the bitmap rather than layered over it, because these
+   * photos sit behind a panel of text and softening them is what makes the
+   * text readable. The crop is rendered with a margin of three times the
+   * radius which is then thrown away, so the faded edge a blur leaves behind
+   * never reaches the canvas. */
   function cropToSlot(slot) {
     var source = slot.source;
-    var scale = Math.max(slot.width / source.width, slot.height / source.height);
+    var blur = slot.blur || 0;
+    var pad = Math.ceil(blur * 3);
+    var width = slot.width + pad * 2;
+    var height = slot.height + pad * 2;
+
+    var scale = Math.max(width / source.width, height / source.height) * (slot.zoom / 100);
     var drawWidth = source.width * scale;
     var drawHeight = source.height * scale;
-    var slack = drawHeight - slot.height;
-    var offsetY = -slack / 2 + (slot.offset / 100) * (slack / 2);
+    var slackX = Math.max(0, drawWidth - width);
+    var slackY = Math.max(0, drawHeight - height);
 
     var canvas = document.createElement('canvas');
-    canvas.width = slot.width;
-    canvas.height = slot.height;
+    canvas.width = width;
+    canvas.height = height;
     var ctx = canvas.getContext('2d');
     ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(source, (slot.width - drawWidth) / 2, Math.min(0, Math.max(-slack, offsetY)), drawWidth, drawHeight);
+    drawBlurred(ctx, source,
+      -slackX / 2 + (slot.offsetX / 100) * (slackX / 2),
+      -slackY / 2 + (slot.offsetY / 100) * (slackY / 2),
+      drawWidth, drawHeight, blur);
+
+    if (pad) {
+      var trimmed = document.createElement('canvas');
+      trimmed.width = slot.width;
+      trimmed.height = slot.height;
+      trimmed.getContext('2d').drawImage(canvas, pad, pad, slot.width, slot.height, 0, 0, slot.width, slot.height);
+      canvas = trimmed;
+    }
     return canvas.toDataURL('image/jpeg', JPEG_QUALITY);
+  }
+
+  /* Dragging a slider fires far faster than a 1080 x 1920 crop can be redrawn
+   * and re-encoded, so the work is collapsed to one pass per frame. */
+  function schedulePhoto(slot) {
+    if (slot.frame) return;
+    slot.frame = requestAnimationFrame(function () {
+      slot.frame = 0;
+      applyPhoto(slot);
+    });
   }
 
   function applyPhoto(slot) {
@@ -625,7 +702,14 @@
       if (slot.kind === 'text') {
         data.values[slot.id] = template.values[slot.id];
       } else if (slot.persistUrl) {
-        data.photos[slot.id] = { src: slot.persistUrl, offset: slot.offset, name: slot.fileName };
+        data.photos[slot.id] = {
+          src: slot.persistUrl,
+          x: slot.offsetX,
+          y: slot.offsetY,
+          zoom: slot.zoom,
+          blur: slot.blur,
+          name: slot.fileName
+        };
       }
     });
     var key = storageKey(template.entry.id);
@@ -811,7 +895,10 @@
       } else {
         var photo = saved.photos && saved.photos[slot.id];
         slot.pendingPhoto = photo || null;
-        slot.offset = photo ? (photo.offset || 0) : 0;
+        slot.offsetX = photo ? (photo.x || 0) : 0;
+        slot.offsetY = photo ? (photo.y || 0) : 0;
+        slot.zoom = photo && photo.zoom ? photo.zoom : 100;
+        slot.blur = photo ? (photo.blur || 0) : 0;
         slot.fileName = photo ? (photo.name || 'saved photo') : '';
       }
     });
@@ -962,41 +1049,71 @@
     wrap.appendChild(row);
     wrap.appendChild(input);
 
-    var sliderRow = make('div', 'slider-row');
-    sliderRow.appendChild(make('span', null, 'Crop'));
-    var slider = document.createElement('input');
-    slider.type = 'range';
-    slider.min = '-100';
-    slider.max = '100';
-    slider.step = '1';
-    slider.value = String(slot.offset);
-    slider.disabled = true;
-    slider.oninput = function () {
-      slot.offset = parseInt(slider.value, 10) || 0;
-      applyPhoto(slot);
-      updatePhotoUI(slot, true);
-      scheduleSave();
-    };
-    sliderRow.appendChild(slider);
-    var readout = make('span', null, 'centre');
-    sliderRow.appendChild(readout);
-    wrap.appendChild(sliderRow);
+    slot.ui = { preview: preview, name: name, sliders: {} };
+    PHOTO_CONTROLS.forEach(function (control) {
+      wrap.appendChild(buildSlider(slot, control));
+    });
 
     if (slot.hint) wrap.appendChild(make('p', 'field-note', slot.hint));
 
     field.appendChild(wrap);
-    slot.ui = { preview: preview, name: name, slider: slider, readout: readout };
     updatePhotoUI(slot);
   }
 
-  function updatePhotoUI(slot, skipPreview) {
+  function shift(value, positive, negative) {
+    return value === 0 ? 'centre' : (value > 0 ? positive : negative) + ' ' + Math.abs(value) + '%';
+  }
+
+  var PHOTO_CONTROLS = [
+    { key: 'offsetX', label: 'X', min: -100, max: 100,
+      format: function (v) { return shift(v, 'right', 'left'); } },
+    { key: 'offsetY', label: 'Y', min: -100, max: 100,
+      format: function (v) { return shift(v, 'down', 'up'); } },
+    { key: 'zoom', label: 'Zoom', min: 100, max: 250,
+      format: function (v) { return v + ' %'; } },
+    { key: 'blur', label: 'Blur', min: 0, max: 40,
+      format: function (v) { return v ? v + ' px' : 'off'; } }
+  ];
+
+  function buildSlider(slot, control) {
+    var row = make('div', 'slider-row');
+    var input = document.createElement('input');
+    input.type = 'range';
+    input.min = String(control.min);
+    input.max = String(control.max);
+    input.step = '1';
+    input.value = String(slot[control.key]);
+    input.disabled = !slot.source;
+    input.setAttribute('aria-label', slot.label + ' — ' + control.label);
+
+    var readout = make('span', 'slider-readout', control.format(slot[control.key]));
+    input.oninput = function () {
+      slot[control.key] = parseInt(input.value, 10) || 0;
+      readout.textContent = control.format(slot[control.key]);
+      schedulePhoto(slot);
+      scheduleSave();
+    };
+
+    row.appendChild(make('span', 'slider-label', control.label));
+    row.appendChild(input);
+    row.appendChild(readout);
+    slot.ui.sliders[control.key] = { input: input, readout: readout, format: control.format };
+    return row;
+  }
+
+  function updatePhotoUI(slot) {
     if (!slot.ui) return;
-    slot.ui.slider.disabled = !slot.source;
-    slot.ui.slider.value = String(slot.offset);
-    slot.ui.readout.textContent = slot.offset === 0 ? 'centre' : (slot.offset > 0 ? 'down' : 'up') +
-      ' ' + Math.abs(slot.offset) + '%';
+    PHOTO_CONTROLS.forEach(function (control) {
+      var slider = slot.ui.sliders[control.key];
+      if (!slider) return;
+      slider.input.disabled = !slot.source;
+      slider.input.value = String(slot[control.key]);
+      slider.readout.textContent = control.format(slot[control.key]);
+    });
     if (slot.fileName) slot.ui.name.textContent = slot.fileName;
-    if (slot.source && !skipPreview) {
+    if (slot.source) {
+      // The swatch shows the source, not the crop, so moving a slider never
+      // has to redraw it.
       slot.ui.preview.textContent = '';
       slot.ui.preview.style.backgroundImage = 'url("' +
         drawTo(slot.source, 148, Math.round(148 * slot.source.height / slot.source.width)).toDataURL('image/jpeg', 0.7) + '")';
@@ -1025,7 +1142,10 @@
       } else {
         slot.source = null;
         slot.persistUrl = null;
-        slot.offset = 0;
+        slot.offsetX = 0;
+        slot.offsetY = 0;
+        slot.zoom = 100;
+        slot.blur = 0;
         slot.fileName = '';
         slot.pendingPhoto = null;
       }

@@ -394,7 +394,21 @@ main { max-width: 1400px; margin: 0 auto; padding: 8px clamp(16px, 4vw, 40px) 60
 .photo-name { font-size: 12px; color: var(--ink-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .slider-row { display: flex; align-items: center; gap: 10px; }
-.slider-row span { font-size: 12px; color: var(--ink-faint); white-space: nowrap; }
+.slider-label {
+  width: 36px;
+  flex: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-dim);
+}
+.slider-readout {
+  width: 66px;
+  flex: none;
+  text-align: right;
+  font-size: 12px;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
 
 input[type='range'] {
   flex: 1;

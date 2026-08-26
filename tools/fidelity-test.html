@@ -121,11 +121,16 @@
           Fracify.renderTextSlot(slot, mode === 'stress' ? STRESS : slot.original);
         });
         if (mode === 'photo') {
+          // ?mode=photo&x=-60&y=40&zoom=140&blur=12 - framing controls, checked
+          // against a grid so a wrong crop or a squashed aspect is obvious.
           var probe = testPhoto();
-          template.slots.forEach(function (slot, i) {
+          template.slots.forEach(function (slot) {
             if (slot.kind !== 'image') return;
             Fracify.adoptImage(slot, probe);
-            slot.offset = i === 0 ? 0 : -60;
+            slot.offsetX = parseInt(params.get('x') || '0', 10);
+            slot.offsetY = parseInt(params.get('y') || '0', 10);
+            slot.zoom = parseInt(params.get('zoom') || '100', 10);
+            slot.blur = parseInt(params.get('blur') || '0', 10);
             Fracify.applyPhoto(slot);
           });
         }
