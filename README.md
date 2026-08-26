@@ -4,7 +4,7 @@ Fills in the FRAC club's Affinity Designer templates in the browser — type the
 texts, drop in the photos, export a full-resolution PNG — so that posting to
 Instagram no longer means opening Affinity.
 
-![The editor: form on the left, live preview on the right](docs/screenshot.jpg)
+![The paired editor: one form on the left, the post and the story previewed side by side](docs/screenshot.jpg)
 
 Everything runs client side. There is no build step, no bundler and no
 dependency that is not committed to this repo: `index.html`, `app.js`,
@@ -25,6 +25,12 @@ redraws artwork. The picker groups them the way the manifest says.
 | Presentation | Discussion 1 / 2 | 1080 × 1080 | title and three question blocks |
 | Presentation | Speed dating 1 / 2 | 1080 × 1080 | title and three question blocks |
 | Presentation | Vocabulary | 1080 × 1080 | title and ten French/Czech pairs |
+
+Every field opens on a French placeholder rather than on the last real post,
+so nothing has to be cleared before it can be filled in. Inside a group, a
+**Next** button in the top bar walks to the following template, which is how you
+get through the six presentation slides without going back to the picker between
+each one.
 
 The post and the story always carry the same words, so they are one entry:
 filling them in twice was only ever a way to get them out of step. A `pair` in
@@ -194,7 +200,11 @@ parts. Either is enough:
    longest existing line is, and whether Affinity centred the block.
 2. **Map it in `templates/manifest.json`.** For files already exported without
    slot names, a slot lists the indices of the `<text>` elements it owns, in
-   document order, or the `id` of the `<image>` whose data gets replaced.
+   document order, or the `id` of the `<image>` whose data gets replaced. A
+   `placeholder` is what the field opens on; `maxLines` is how many lines the
+   design has room for before the text has to start shrinking. Leaving a text
+   out of every slot keeps it in the artwork and out of the form, which is what
+   fixed labels want.
 
 Either way, add the file to the `templates` array in the manifest so it turns up
 in the picker. A template with neither slot names nor a mapping is shown as

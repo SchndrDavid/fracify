@@ -262,7 +262,11 @@
       align: def.align || 'auto',
       maxLines: def.maxLines || sorted.length,
       maxWidth: maxWidth || null,
-      original: original
+      original: original,
+      // What the form starts with. The template's own words are the last real
+      // post the designer made; a field should open on something that asks to
+      // be replaced instead.
+      placeholder: typeof def.placeholder === 'string' ? def.placeholder : null
     };
   }
 
@@ -799,6 +803,7 @@
     notice: $('#notice'),
     exportStatus: $('#export-status'),
     back: $('#btn-back'),
+    next: $('#btn-next'),
     reset: $('#btn-reset'),
     png: $('#btn-png'),
     svg: $('#btn-svg')
@@ -903,7 +908,20 @@
     // has to turn up somewhere.
     var loose = entries.filter(function (entry) { return !grouped[entry.id]; });
     if (loose.length) ui.pickerGroups.appendChild(buildGroup('Other', loose));
+    state.entries = entries;
     return entries;
+  }
+
+  /* What comes after this one in its own group, wrapping at the end. A
+   * presentation is six templates in a row, and going back to the picker
+   * between each of them is five clicks nobody needs. */
+  function nextInGroup(entry) {
+    var siblings = (state.entries || []).filter(function (other) {
+      return other.group === entry.group;
+    });
+    if (siblings.length < 2) return null;
+    var here = siblings.indexOf(entry);
+    return here < 0 ? null : siblings[(here + 1) % siblings.length];
   }
 
   function markUnsupported(entry, reason) {
@@ -934,6 +952,7 @@
             maxLines: slot.kind === 'text' ? slot.maxLines : 0,
             fontSize: slot.fontSize,
             original: slot.original,
+            placeholder: slot.placeholder,
             offsetX: 0, offsetY: 0, zoom: 100, blur: 0, frame: 0,
             source: null, persistUrl: null, fileName: ''
           };
@@ -990,13 +1009,17 @@
     if (card) card.blur();
   }
 
+  function startingValue(field) {
+    return field.placeholder != null ? field.placeholder : field.original;
+  }
+
   function restore(workspace) {
     var saved = readState(workspace.entry.id) || { values: {}, photos: {} };
     workspace.slots.forEach(function (field) {
       if (field.kind === 'text') {
         workspace.values[field.id] = saved.values && typeof saved.values[field.id] === 'string'
           ? saved.values[field.id]
-          : field.original;
+          : startingValue(field);
       } else {
         var photo = saved.photos && saved.photos[field.id];
         field.pendingPhoto = photo || null;
@@ -1019,6 +1042,16 @@
     ui.editor.classList.remove('is-hidden');
     ui.back.classList.remove('is-hidden');
     ui.exportStatus.textContent = '';
+
+    var following = nextInGroup(workspace.entry);
+    ui.next.classList.toggle('is-hidden', !following);
+    if (following) {
+      ui.next.textContent = 'Next: ' + following.name + '  →';
+      ui.next.onclick = function () {
+        flushSave();
+        openWorkspace(following, null);
+      };
+    }
     ui.png.textContent = many ? 'Export both PNGs' : 'Export PNG';
     ui.svg.textContent = many ? 'Download both SVGs' : 'Download SVG';
 
@@ -1096,6 +1129,13 @@
     } else {
       warn.classList.add('is-hidden');
     }
+  }
+
+  /* Leaving the editor has to beat the save timer, or the last thing typed
+   * before clicking away is the one thing that does not come back. */
+  function flushSave() {
+    clearTimeout(state.saveTimer);
+    if (state.workspace) saveState(state.workspace);
   }
 
   function scheduleSave() {
@@ -1301,8 +1341,10 @@
   }
 
   ui.back.onclick = function () {
+    flushSave();
     ui.editor.classList.add('is-hidden');
     ui.back.classList.add('is-hidden');
+    ui.next.classList.add('is-hidden');
     ui.picker.classList.remove('is-hidden');
     ui.notice.classList.add('is-hidden');
     clear(ui.stage);
@@ -1320,7 +1362,7 @@
     forgetState(workspace.entry.id);
     workspace.slots.forEach(function (field) {
       if (field.kind === 'text') {
-        workspace.values[field.id] = field.original;
+        workspace.values[field.id] = startingValue(field);
       } else {
         field.source = null;
         field.persistUrl = null;
