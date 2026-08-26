@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>working…</title>
+<link rel="stylesheet" href="../styles.css">
+<style>
+  /* The page is nothing but the artwork, pinned to the top left corner, so a
+     headless screenshot at the template's own size is the bitmap itself. */
+  html, body { margin: 0; padding: 0; background: #000; overflow: hidden; }
+  .glow { display: none; }
+  #out { position: absolute; left: 0; top: 0; -webkit-font-smoothing: antialiased; }
+  #out svg, #out img { display: block; }
+  #err { color: #f66; font: 14px monospace; padding: 20px; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<div id="out"></div>
+<pre id="err"></pre>
+
+<script src="../fonts/embedded-fonts.js"></script>
+<script>
+/* The app boots against the real page, which this test page does not have, so
+   the DOM it expects is stubbed out before app.js runs. */
+(function () {
+  var ids = ['picker', 'picker-grid', 'picker-status', 'editor', 'editor-title', 'editor-kind',
+             'fields', 'stage', 'notice', 'export-status', 'btn-back', 'btn-reset', 'btn-png', 'btn-svg'];
+  var hidden = document.createElement('div');
+  hidden.style.position = 'absolute';
+  hidden.style.left = '-99999px';
+  hidden.style.top = '0';
+  ids.forEach(function (id) {
+    var node = document.createElement('div');
+    node.id = id;
+    hidden.appendChild(node);
+  });
+  document.body.appendChild(hidden);
+  window.FRACIFY_TEMPLATE_DIR = '../templates/';
+  window.FRACIFY_NO_BOOT = true;
+})();
+</script>
+<script src="../app.js"></script>
+<script>
+(function () {
+  var params = new URLSearchParams(location.search);
+  var wanted = params.get('template') || 'dis1';
+  var mode = params.get('mode') || 'export';
+  var out = document.getElementById('out');
+
+  function fail(err) {
+    document.getElementById('err').textContent = String(err && err.stack || err);
+    document.title = 'failed';
+  }
+
+  /* Long enough to force wrapping in every block, and to push the single line
+     slots past the point where shrinking has to kick in. */
+  var STRESS = 'Est-ce que tu préfères passer les vacances au bord de la mer ' +
+    'ou plutôt à la montagne avec toute la famille ?';
+
+  /* A deliberately portrait test image: a 3:4 grid with a labelled centre and
+     corners, so a wrong crop, a squashed aspect or a letterbox is obvious. */
+  function testPhoto() {
+    var canvas = document.createElement('canvas');
+    canvas.width = 900;
+    canvas.height = 1200;
+    var ctx = canvas.getContext('2d');
+    var gradient = ctx.createLinearGradient(0, 0, 900, 1200);
+    gradient.addColorStop(0, '#1d7a4f');
+    gradient.addColorStop(1, '#7a1d5f');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 900, 1200);
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+    ctx.lineWidth = 2;
+    for (var x = 0; x <= 900; x += 100) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 1200); ctx.stroke(); }
+    for (var y = 0; y <= 1200; y += 100) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(900, y); ctx.stroke(); }
+    ctx.strokeStyle = '#ffcc00';
+    ctx.lineWidth = 10;
+    ctx.strokeRect(5, 5, 890, 1190);
+    ctx.beginPath();
+    ctx.arc(450, 600, 120, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 64px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('TOP', 450, 90);
+    ctx.fillText('MIDDLE', 450, 620);
+    ctx.fillText('BOTTOM', 450, 1160);
+    return canvas;  // a canvas draws like an image and needs no decode wait
+  }
+
+  Fracify.fontsReady()
+    .then(function () { return fetch(Fracify.manifestURL); })
+    .then(function (res) { return res.json(); })
+    .then(function (manifest) {
+      var entry = manifest.templates.filter(function (t) { return t.id === wanted; })[0];
+      if (!entry) throw new Error('no template "' + wanted + '" in the manifest');
+      return Fracify.loadTemplate(entry);
+    })
+    .then(function (template) {
+      document.body.style.width = template.width + 'px';
+      document.body.style.height = template.height + 'px';
+
+      if (mode === 'reference') {
+        // The template mounted straight into the DOM. Useful to look at, but
+        // the page rasterises text differently from an <img>, so it is not
+        // what the pixel diff is run against.
+        out.appendChild(template.root.cloneNode(true));
+        document.title = 'ready';
+        return null;
+      }
+
+      if (mode === 'baseline') {
+        // The untouched template through the same <img> and canvas path as an
+        // export. Diffing this against mode=export isolates the slot
+        // machinery from everything else.
+        template.live = template.root.cloneNode(true);
+      } else {
+        Fracify.mount(template, out);
+        template.slots.forEach(function (slot) {
+          if (slot.kind !== 'text') return;
+          Fracify.renderTextSlot(slot, mode === 'stress' ? STRESS : slot.original);
+        });
+        if (mode === 'photo') {
+          var probe = testPhoto();
+          template.slots.forEach(function (slot, i) {
+            if (slot.kind !== 'image') return;
+            Fracify.adoptImage(slot, probe);
+            slot.offset = i === 0 ? 0 : -60;
+            Fracify.applyPhoto(slot);
+          });
+        }
+      }
+
+      if (mode === 'live') { document.title = 'ready'; return null; }
+
+      // The runner waits for this POST instead of screenshotting the page:
+      // the bytes that come back are the export itself, not a picture of it.
+      return Fracify.renderPNG(template).then(function (blob) {
+        return fetch('/_result?name=' + encodeURIComponent(wanted + '-' + mode), {
+          method: 'POST',
+          body: blob
+        });
+      }).then(function () {
+        document.title = 'ready';
+      });
+    })
+    .catch(fail);
+})();
+</script>
+</body>
+</html>
