@@ -173,6 +173,8 @@
       else if (key === 'width') spec.maxWidth = parseFloat(value);
       else if (key === 'align') spec.align = value;
       else if (key === 'label') spec.label = value;
+      else if (key === 'centre') spec.centre = parseFloat(value);
+      else if (key === 'vcentre') spec.vcentre = value !== 'false';
     }
     return spec;
   }
@@ -260,6 +262,9 @@
       lineGap: lineGap,
       x: len(first.getAttribute('x')),
       y: len(first.getAttribute('y')),
+      // Where the block belongs, when the template cannot be trusted to say.
+      centreOn: typeof def.centre === 'number' ? def.centre : null,
+      vcentre: !!def.vcentre,
       align: def.align || 'auto',
       maxLines: def.maxLines || sorted.length,
       maxWidth: maxWidth || null,
@@ -414,6 +419,28 @@
     }
   }
 
+  /* A `centre` in the manifest is given in the artboard's own coordinates - 540
+   * is the middle of a 1080 wide template - but a slot lives inside whatever
+   * transforms Affinity wrapped it in, and that is the space its x attributes
+   * are written in. This walks the one back into the other.
+   *
+   * Both matrices are taken against the screen and divided out, rather than
+   * asking getCTM() for the transform to the viewport: the preview is drawn at
+   * whatever width the column happens to be, and getCTM() would fold that
+   * scale in - correct on a page showing the template at 1080 px, and wrong
+   * everywhere else. Screen space cancels, so what is left is the viewBox. */
+  function toLocalX(node, x) {
+    var owner = node.ownerSVGElement;
+    if (!owner || !owner.createSVGPoint || !node.getScreenCTM) return null;
+    var here = node.getScreenCTM();
+    var root = owner.getScreenCTM();
+    if (!here || !root) return null;
+    var point = owner.createSVGPoint();
+    point.x = x;
+    point.y = 0;
+    return point.matrixTransform(here.inverse().multiply(root)).x;
+  }
+
   /* Fills in whatever the manifest left out: how wide the block may be, and
    * whether Affinity centred it. Both are read off the template itself, so a
    * new template usually needs nothing but a name. */
@@ -447,6 +474,15 @@
       }
     }
     slot.centre = centres.reduce(function (a, b) { return a + b; }, 0) / centres.length;
+
+    /* That centre is Affinity's own x plus a width measured in our cut of the
+     * font, which runs a little narrower than the designer's - so it drifts a
+     * few pixels left, and it is only ever as well placed as the template. A
+     * slot that says where its middle is gets put there exactly. */
+    if (slot.centreOn != null) {
+      var pinned = toLocalX(slot.holder, slot.centreOn);
+      if (pinned != null) slot.centre = pinned;
+    }
   }
 
   /* ---------------------------------------------------------- text layout */
@@ -532,11 +568,22 @@
     var style = withFontSize(slot.style, result.size);
     if (centred) style = withAnchor(style, 'middle');
 
+    /* Lines are laid out downwards from the first baseline, so a block shorter
+     * than the one the design drew leaves its space empty underneath and sits
+     * high - a one line message in a banner built for two. Where a slot asks
+     * for it, the block keeps the middle the design gave it instead, and grows
+     * or shrinks around that. */
+    var top = slot.y;
+    if (slot.vcentre) {
+      top += (slot.originals.length - 1) * slot.lineGap / 2 -
+        (result.lines.length - 1) * result.lineGap / 2;
+    }
+
     result.lines.forEach(function (line, i) {
       var node = document.createElementNS(SVG_NS, 'text');
       node.setAttribute('style', style);
       node.setAttribute('x', round(centred ? slot.centre : slot.x));
-      node.setAttribute('y', round(slot.y + i * result.lineGap));
+      node.setAttribute('y', round(top + i * result.lineGap));
       node.textContent = line.text;
       slot.holder.appendChild(node);
     });

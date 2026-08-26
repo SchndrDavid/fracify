@@ -163,9 +163,15 @@ carries a thin white rim that belongs to no layer anyone can turn off.
 `tools/strip-outline.py` works on the pixels instead: a bitmap whose opaque area
 is one flat colour is a plate, and any lighter pixel sitting on its edge is the
 stroke. Those pixels keep their alpha, so the shape and its anti-aliasing are
-exactly as they were, and take the plate's own colour. Only the rim is looked at,
-never the middle, which is what keeps the tool off the sponsor logos — those are
-white on blue too, but their white is inside the shape rather than around it.
+exactly as they were, and take the plate's own colour. The same stroke also
+leaves white *behind* the transparent pixels around the shape, where it faded
+out: invisible until something resamples the bitmap — which is any preview drawn
+smaller than the artwork — and then it mixes back into the visible edge as a
+fringe. So every pixel the shape does not fully cover is repainted the plate's
+colour as well, alpha untouched. Only the rim is looked at, never the middle,
+and a plate has to fill its bitmap to count as one, which is what keeps the tool
+off the sponsor logos — those are white on blue too, but their white is inside
+the shape, and they float in empty space rather than filling it.
 
 **The root has no pixel size.** The templates say `width="100%" height="100%"`,
 which Safari renders blank or badly scaled once the file is in an `<img>`. The
@@ -221,6 +227,14 @@ parts. Either is enough:
    design has room for before the text has to start shrinking. Leaving a text
    out of every slot keeps it in the artwork and out of the form, which is what
    fixed labels want.
+
+   Where the block sits is normally read off the template, but two keys
+   override that when the template cannot be trusted. `centre` pins a centred
+   slot's middle to an x in the artboard's own coordinates — 540 on a 1080 wide
+   template — for a block Affinity left off-centre, or one that has to line up
+   across a pair. `vcentre` keeps a block on the vertical middle the design gave
+   it, so a one-line message in a banner drawn for two does not sit high in the
+   space. Both work as `slot:message|centre=540|vcentre` in a layer name too.
 
 Either way, add the file to the `templates` array in the manifest so it turns up
 in the picker. A template with neither slot names nor a mapping is shown as

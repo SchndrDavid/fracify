@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "readme": "Slots map a template to the fields the app shows. A pair in 'pairs' opens several templates in one editor, where every field drives the slot of the same name in each of them. 'hidden' keeps a template out of the picker when a pair already covers it. Manual slot mapping for templates exported from Affinity Designer without slot: layer names. A template whose layers are named slot:<name> needs no slots array here - the app discovers them. 'texts' holds indices into the template's <text> elements in document order (see tools/check-manifest.py). 'image' holds the id of the <image> in <defs> whose href gets replaced.",
+  "readme": "Slots map a template to the fields the app shows. A pair in 'pairs' opens several templates in one editor, where every field drives the slot of the same name in each of them. 'hidden' keeps a template out of the picker when a pair already covers it. Manual slot mapping for templates exported from Affinity Designer without slot: layer names. A template whose layers are named slot:<name> needs no slots array here - the app discovers them. 'texts' holds indices into the template's <text> elements in document order (see tools/check-manifest.py). 'image' holds the id of the <image> in <defs> whose href gets replaced. 'centre' pins a centred slot's middle to an x in the artboard's own coordinates - 540 on a 1080 wide template - for a block Affinity did not leave centred, or one that has to line up across a pair. 'vcentre' keeps a block on the vertical middle the design gave it, so a message shorter than the template's own does not sit high in the space.",
   "groups": [
     { "id": "instagram", "name": "Instagram" },
     { "id": "announcement", "name": "Annonce" },
@@ -61,7 +61,7 @@
       "hidden": true,
       "slots": [
         { "id": "photo", "label": "Photo", "image": "_Image1", "hint": "Occupe tout le fond, derrière le bandeau rouge." },
-        { "id": "message", "label": "Message", "texts": [0, 1], "placeholder": "Votre message en deux lignes", "maxWidth": 930, "align": "center", "maxLines": 2 }
+        { "id": "message", "label": "Message", "texts": [0, 1], "placeholder": "Votre message en deux lignes", "maxWidth": 930, "align": "center", "centre": 540, "vcentre": true, "maxLines": 2 }
       ]
     },
     {
@@ -72,7 +72,7 @@
       "hidden": true,
       "slots": [
         { "id": "photo", "label": "Photo", "image": "_Image2", "hint": "Occupe tout le fond, derrière le bandeau rouge." },
-        { "id": "message", "label": "Message", "texts": [0, 1], "placeholder": "Votre message en deux lignes", "maxWidth": 930, "align": "center", "maxLines": 2 }
+        { "id": "message", "label": "Message", "texts": [0, 1], "placeholder": "Votre message en deux lignes", "maxWidth": 930, "align": "center", "centre": 540, "vcentre": true, "maxLines": 2 }
       ]
     },
     {

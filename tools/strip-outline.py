@@ -11,6 +11,13 @@ plate, and any lighter pixel sitting on its edge is the stroke. Those pixels
 keep their alpha - so the shape, its corners and its anti-aliasing are exactly
 as they were - and take the plate's own colour.
 
+The same stroke also leaves white behind the fully transparent pixels around
+the shape, where it faded out. Nothing shows it at first, but a renderer that
+resamples the bitmap - which is any preview drawn smaller than the artwork -
+mixes those invisible pixels into the visible edge, and the white rim comes
+back as a fringe. Every pixel that is not fully opaque is repainted the plate's
+colour as well, alpha untouched, so there is no white left to bleed.
+
     pip install pillow
     python tools/strip-outline.py templates/post.svg templates/story.svg
 
@@ -32,6 +39,7 @@ from PIL import Image
 EMBEDDED = re.compile(r'<image([^>]*?)(xlink:href|href)="data:image/png;base64,([^"]+)"')
 
 FLAT_SHARE = 0.90   # of the opaque pixels, before it counts as a plate
+COVERAGE = 0.60     # of the bitmap a plate has to fill, or it is a logo
 RIM = 2             # a stroke this many pixels from the edge is still a rim
 OPAQUE = 128
 LIGHTER = 8         # a rim pixel this much lighter than the plate is stroke
@@ -42,7 +50,12 @@ def read(path):
 
 
 def plate_colour(pixels, width, height):
-    """The one colour a flat plate is made of, or None if it is a picture."""
+    """The one colour a flat plate is made of, or None if it is a picture.
+
+    A plate fills its bitmap; a logo is a shape floating in a lot of empty
+    space. Both can be a single flat colour, and only the first one is ours -
+    which is why coverage is asked about as well as flatness.
+    """
     counts = Counter()
     for y in range(height):
         for x in range(width):
@@ -51,8 +64,11 @@ def plate_colour(pixels, width, height):
                 counts[(r, g, b)] += 1
     if not counts:
         return None
+    opaque = sum(counts.values())
+    if opaque < COVERAGE * width * height:
+        return None
     colour, n = counts.most_common(1)[0]
-    return colour if n >= FLAT_SHARE * sum(counts.values()) else None
+    return colour if n >= FLAT_SHARE * opaque else None
 
 
 def on_rim(pixels, width, height, x, y):
@@ -81,7 +97,13 @@ def strip(png):
     for y in range(height):
         for x in range(width):
             r, g, b, a = pixels[x, y]
-            if a == 0 or (r, g, b) == colour:
+            if (r, g, b) == colour:
+                continue
+            # Anything the shape does not fully cover cannot be artwork, so it
+            # is repainted whatever its colour: that is where the stroke hides.
+            if a < OPAQUE:
+                pixels[x, y] = (colour[0], colour[1], colour[2], a)
+                changed += 1
                 continue
             if r - colour[0] < LIGHTER and g - colour[1] < LIGHTER and b - colour[2] < LIGHTER:
                 continue
