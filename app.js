@@ -574,14 +574,14 @@
    * text readable. The crop is rendered with a margin of three times the
    * radius which is then thrown away, so the faded edge a blur leaves behind
    * never reaches the canvas. */
-  function cropToSlot(slot) {
-    var source = slot.source;
-    var blur = slot.blur || 0;
+  function cropPhoto(framing, targetWidth, targetHeight) {
+    var source = framing.source;
+    var blur = framing.blur || 0;
     var pad = Math.ceil(blur * 3);
-    var width = slot.width + pad * 2;
-    var height = slot.height + pad * 2;
+    var width = targetWidth + pad * 2;
+    var height = targetHeight + pad * 2;
 
-    var scale = Math.max(width / source.width, height / source.height) * (slot.zoom / 100);
+    var scale = Math.max(width / source.width, height / source.height) * (framing.zoom / 100);
     var drawWidth = source.width * scale;
     var drawHeight = source.height * scale;
     var slackX = Math.max(0, drawWidth - width);
@@ -593,44 +593,50 @@
     var ctx = canvas.getContext('2d');
     ctx.imageSmoothingQuality = 'high';
     drawBlurred(ctx, source,
-      -slackX / 2 + (slot.offsetX / 100) * (slackX / 2),
-      -slackY / 2 + (slot.offsetY / 100) * (slackY / 2),
+      -slackX / 2 + (framing.offsetX / 100) * (slackX / 2),
+      -slackY / 2 + (framing.offsetY / 100) * (slackY / 2),
       drawWidth, drawHeight, blur);
 
     if (pad) {
       var trimmed = document.createElement('canvas');
-      trimmed.width = slot.width;
-      trimmed.height = slot.height;
-      trimmed.getContext('2d').drawImage(canvas, pad, pad, slot.width, slot.height, 0, 0, slot.width, slot.height);
+      trimmed.width = targetWidth;
+      trimmed.height = targetHeight;
+      trimmed.getContext('2d').drawImage(canvas, pad, pad, targetWidth, targetHeight,
+        0, 0, targetWidth, targetHeight);
       canvas = trimmed;
     }
     return canvas.toDataURL('image/jpeg', JPEG_QUALITY);
   }
 
-  /* Dragging a slider fires far faster than a 1080 x 1920 crop can be redrawn
-   * and re-encoded, so the work is collapsed to one pass per frame. */
-  function schedulePhoto(slot) {
-    if (slot.frame) return;
-    slot.frame = requestAnimationFrame(function () {
-      slot.frame = 0;
-      applyPhoto(slot);
+  /* One photo field can stand for several templates at once - the post and the
+   * story take the same photograph in two different shapes - so the crop is
+   * redone for every slot the field feeds. */
+  function applyPhoto(field) {
+    if (!field.source) return;
+    var members = field.members || [field];
+    members.forEach(function (slot) {
+      if (!slot.liveImage) return;
+      slot.liveImage.setAttributeNS(XLINK_NS, 'xlink:href', cropPhoto(field, slot.width, slot.height));
+      slot.liveImage.removeAttribute('href');
+      slot.liveImage.setAttribute('preserveAspectRatio', 'xMidYMid slice');
     });
   }
 
-  function applyPhoto(slot) {
-    if (!slot.source || !slot.liveImage) return;
-    var url = cropToSlot(slot);
-    slot.liveImage.setAttributeNS(XLINK_NS, 'xlink:href', url);
-    slot.liveImage.removeAttribute('href');
-    slot.liveImage.setAttribute('preserveAspectRatio', 'xMidYMid slice');
-    return url;
+  /* Dragging a slider fires far faster than a 1080 x 1920 crop can be redrawn
+   * and re-encoded, so the work is collapsed to one pass per frame. */
+  function schedulePhoto(field) {
+    if (field.frame) return;
+    field.frame = requestAnimationFrame(function () {
+      field.frame = 0;
+      applyPhoto(field);
+    });
   }
 
-  function adoptImage(slot, image) {
+  function adoptImage(field, image) {
     var fitted = scaleToFit(image.naturalWidth || image.width, image.naturalHeight || image.height, SOURCE_MAX_SIDE);
-    slot.source = drawTo(image, fitted.width, fitted.height);
-    var persist = scaleToFit(slot.source.width, slot.source.height, PERSIST_MAX_SIDE);
-    slot.persistUrl = drawTo(slot.source, persist.width, persist.height).toDataURL('image/jpeg', 0.75);
+    field.source = drawTo(image, fitted.width, fitted.height);
+    var persist = scaleToFit(field.source.width, field.source.height, PERSIST_MAX_SIDE);
+    field.persistUrl = drawTo(field.source, persist.width, persist.height).toDataURL('image/jpeg', 0.75);
   }
 
   /* --------------------------------------------------------------- export */
@@ -696,29 +702,29 @@
 
   function storageKey(id) { return STORAGE_PREFIX + id; }
 
-  function saveState(template) {
+  function saveState(workspace) {
     var data = { values: {}, photos: {} };
-    template.slots.forEach(function (slot) {
-      if (slot.kind === 'text') {
-        data.values[slot.id] = template.values[slot.id];
-      } else if (slot.persistUrl) {
-        data.photos[slot.id] = {
-          src: slot.persistUrl,
-          x: slot.offsetX,
-          y: slot.offsetY,
-          zoom: slot.zoom,
-          blur: slot.blur,
-          name: slot.fileName
+    workspace.slots.forEach(function (field) {
+      if (field.kind === 'text') {
+        data.values[field.id] = workspace.values[field.id];
+      } else if (field.persistUrl) {
+        data.photos[field.id] = {
+          src: field.persistUrl,
+          x: field.offsetX,
+          y: field.offsetY,
+          zoom: field.zoom,
+          blur: field.blur,
+          name: field.fileName
         };
       }
     });
-    var key = storageKey(template.entry.id);
+    var key = storageKey(workspace.entry.id);
     try {
       localStorage.setItem(key, JSON.stringify(data));
       return true;
     } catch (err) {
       // Photos are what blows the quota. Drop the other templates' photos
-      // first, and this template's own photos only if that was not enough.
+      // first, and this one's own photos only if that was not enough.
       for (var i = localStorage.length - 1; i >= 0; i--) {
         var other = localStorage.key(i);
         if (other && other.indexOf(STORAGE_PREFIX) === 0 && other !== key) localStorage.removeItem(other);
