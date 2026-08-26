@@ -101,6 +101,17 @@ That is the same thing Affinity's "convert to curves" does on export. It only
 touches the text elements set in that font, leaves the rest of the file byte for
 byte alone, and never puts the font in the repo.
 
+**Affinity flattens the photo layers on export.** The post is built from a
+photo across the whole canvas and a straight-edged cutout of a second one over
+it. The export rasterises both into a single `<image>`, leaving one photo to
+address instead of two and the join frozen into the pixels.
+`tools/split-photo-layer.py` fits the straight edge between the two flat
+regions of the placeholder, turns it into a `clipPath`, and makes the single
+`<use>` into two — the layer underneath and the cutout on top. Both start out
+pointing at the same bitmap, so the template renders exactly as before until a
+photo goes into one of them. It refuses anything whose join is not a straight
+line between two flat colours.
+
 **Affinity flattens a translucent layer on export.** The blue panel on the post
 and the story is drawn over the photos at 80 % opacity. The SVG export
 rasterises it and bakes whatever happened to be behind it into the bitmap, so
