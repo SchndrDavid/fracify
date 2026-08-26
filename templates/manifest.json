@@ -3,8 +3,8 @@
   "readme": "Slots map a template to the fields the app shows. A pair in 'pairs' opens several templates in one editor, where every field drives the slot of the same name in each of them. 'hidden' keeps a template out of the picker when a pair already covers it. Manual slot mapping for templates exported from Affinity Designer without slot: layer names. A template whose layers are named slot:<name> needs no slots array here - the app discovers them. 'texts' holds indices into the template's <text> elements in document order (see tools/check-manifest.py). 'image' holds the id of the <image> in <defs> whose href gets replaced.",
   "groups": [
     { "id": "instagram", "name": "Instagram" },
-    { "id": "announcement", "name": "Announcement" },
-    { "id": "presentation", "name": "Presentation" }
+    { "id": "announcement", "name": "Annonce" },
+    { "id": "presentation", "name": "Présentation" }
   ],
   "pairs": [
     {
@@ -18,53 +18,53 @@
     {
       "id": "post",
       "file": "post.svg",
-      "name": "Instagram post",
+      "name": "Post Instagram",
       "group": "instagram",
       "hidden": true,
       "slots": [
-        { "id": "photo-top", "label": "Top photo", "image": "_ImagePhotoTop", "hint": "The cutout above the diagonal." },
-        { "id": "photo-bottom", "label": "Bottom photo", "image": "_ImagePhotoBottom", "hint": "Runs across the whole canvas, under the cutout." },
-        { "id": "place", "label": "Place", "texts": [2], "placeholder": "Le lieu de la rencontre", "maxWidth": 860, "align": "center", "maxLines": 1 },
-        { "id": "time", "label": "Time", "texts": [3], "placeholder": "- 18h00 -", "maxWidth": 860, "align": "center", "maxLines": 1 },
-        { "id": "theme", "label": "Theme", "texts": [4], "placeholder": "Le thème de la semaine", "maxWidth": 690, "align": "center", "maxLines": 2 },
-        { "id": "day", "label": "Day", "texts": [5], "placeholder": "15.", "maxWidth": 115, "align": "center", "maxLines": 1 },
-        { "id": "month", "label": "Month", "texts": [6], "placeholder": "mai", "maxWidth": 115, "align": "center", "maxLines": 1 }
+        { "id": "photo-top", "label": "Photo du haut", "image": "_ImagePhotoTop", "hint": "La découpe au-dessus de la diagonale." },
+        { "id": "photo-bottom", "label": "Photo du bas", "image": "_ImagePhotoBottom", "hint": "Occupe toute la surface, sous la découpe." },
+        { "id": "place", "label": "Le lieu", "texts": [2], "placeholder": "Le lieu de la rencontre", "maxWidth": 860, "align": "center", "maxLines": 1 },
+        { "id": "time", "label": "L’heure", "texts": [3], "placeholder": "- 18h00 -", "maxWidth": 860, "align": "center", "maxLines": 1 },
+        { "id": "theme", "label": "Le thème", "texts": [4], "placeholder": "Le thème de la semaine", "maxWidth": 690, "align": "center", "maxLines": 2 },
+        { "id": "day", "label": "Jour", "texts": [5], "placeholder": "15.", "maxWidth": 115, "align": "center", "maxLines": 1 },
+        { "id": "month", "label": "Mois", "texts": [6], "placeholder": "mai", "maxWidth": 115, "align": "center", "maxLines": 1 }
       ]
     },
     {
       "id": "story",
       "file": "story.svg",
-      "name": "Instagram story",
+      "name": "Story Instagram",
       "group": "instagram",
       "hidden": true,
       "slots": [
-        { "id": "photo-top", "label": "Top photo", "image": "_ImagePhotoTop", "hint": "The cutout above the diagonal." },
-        { "id": "photo-bottom", "label": "Bottom photo", "image": "_ImagePhotoBottom", "hint": "Runs across the whole canvas, under the cutout." },
-        { "id": "place", "label": "Place", "texts": [2], "placeholder": "Le lieu de la rencontre", "maxWidth": 860, "align": "center", "maxLines": 1 },
-        { "id": "time", "label": "Time", "texts": [3], "placeholder": "- 18h00 -", "maxWidth": 860, "align": "center", "maxLines": 1 },
-        { "id": "theme", "label": "Theme", "texts": [4], "placeholder": "Le thème de la semaine", "maxWidth": 690, "align": "center", "maxLines": 2 },
-        { "id": "day", "label": "Day", "texts": [5], "placeholder": "15.", "maxWidth": 115, "align": "center", "maxLines": 1 },
-        { "id": "month", "label": "Month", "texts": [6], "placeholder": "mai", "maxWidth": 115, "align": "center", "maxLines": 1 }
+        { "id": "photo-top", "label": "Photo du haut", "image": "_ImagePhotoTop", "hint": "La découpe au-dessus de la diagonale." },
+        { "id": "photo-bottom", "label": "Photo du bas", "image": "_ImagePhotoBottom", "hint": "Occupe toute la surface, sous la découpe." },
+        { "id": "place", "label": "Le lieu", "texts": [2], "placeholder": "Le lieu de la rencontre", "maxWidth": 860, "align": "center", "maxLines": 1 },
+        { "id": "time", "label": "L’heure", "texts": [3], "placeholder": "- 18h00 -", "maxWidth": 860, "align": "center", "maxLines": 1 },
+        { "id": "theme", "label": "Le thème", "texts": [4], "placeholder": "Le thème de la semaine", "maxWidth": 690, "align": "center", "maxLines": 2 },
+        { "id": "day", "label": "Jour", "texts": [5], "placeholder": "15.", "maxWidth": 115, "align": "center", "maxLines": 1 },
+        { "id": "month", "label": "Mois", "texts": [6], "placeholder": "mai", "maxWidth": 115, "align": "center", "maxLines": 1 }
       ]
     },
     {
       "id": "fracad",
       "file": "fracad.svg",
-      "name": "Announcement",
+      "name": "Annonce",
       "group": "announcement",
       "slots": [
-        { "id": "photo", "label": "Photo", "image": "_Image2", "hint": "Fills the whole story frame." },
+        { "id": "photo", "label": "Photo", "image": "_Image2", "hint": "Occupe toute la story." },
         { "id": "message", "label": "Message", "texts": [0, 1], "placeholder": "Votre message en deux lignes", "maxWidth": 930, "align": "center", "maxLines": 2 }
       ]
     },
     {
       "id": "cover",
       "file": "cover.svg",
-      "name": "Cover",
+      "name": "Couverture",
       "group": "presentation",
       "slots": [
         { "id": "date", "label": "Date", "texts": [1], "placeholder": "11. mai", "maxWidth": 270, "align": "center", "maxLines": 1 },
-        { "id": "title", "label": "Title", "texts": [0], "placeholder": "Le titre de la présentation", "maxWidth": 860, "align": "center", "maxLines": 1 }
+        { "id": "title", "label": "Titre", "texts": [0], "placeholder": "Le titre de la présentation", "maxWidth": 860, "align": "center", "maxLines": 1 }
       ],
       "fixed": "The club name and its Czech subtitle never change, so they are left out of the form."
     },
@@ -74,7 +74,7 @@
       "name": "Discussion 1",
       "group": "presentation",
       "slots": [
-        { "id": "title", "label": "Title", "texts": [0], "placeholder": "Discussion 1", "maxWidth": 370, "align": "center", "maxLines": 1 },
+        { "id": "title", "label": "Titre", "texts": [0], "placeholder": "Discussion 1", "maxWidth": 370, "align": "center", "maxLines": 1 },
         { "id": "q1", "label": "Question 1", "texts": [1, 2], "placeholder": "Écrivez ici votre première question pour le groupe.", "maxWidth": 780, "align": "left", "maxLines": 3 },
         { "id": "q2", "label": "Question 2", "texts": [3, 4, 5], "placeholder": "Écrivez ici votre deuxième question pour le groupe.", "maxWidth": 780, "align": "left", "maxLines": 3 },
         { "id": "q3", "label": "Question 3", "texts": [6, 7, 8], "placeholder": "Écrivez ici votre troisième question pour le groupe.", "maxWidth": 780, "align": "left", "maxLines": 3 }
@@ -86,7 +86,7 @@
       "name": "Discussion 2",
       "group": "presentation",
       "slots": [
-        { "id": "title", "label": "Title", "texts": [0], "placeholder": "Discussion 2", "maxWidth": 370, "align": "center", "maxLines": 1 },
+        { "id": "title", "label": "Titre", "texts": [0], "placeholder": "Discussion 2", "maxWidth": 370, "align": "center", "maxLines": 1 },
         { "id": "q1", "label": "Question 1", "texts": [1, 2, 3], "placeholder": "Écrivez ici votre première question pour le groupe.", "maxWidth": 780, "align": "left", "maxLines": 3 },
         { "id": "q2", "label": "Question 2", "texts": [4, 5, 6], "placeholder": "Écrivez ici votre deuxième question pour le groupe.", "maxWidth": 780, "align": "left", "maxLines": 3 },
         { "id": "q3", "label": "Question 3", "texts": [7, 8], "placeholder": "Écrivez ici votre troisième question pour le groupe.", "maxWidth": 780, "align": "left", "maxLines": 3 }
@@ -98,7 +98,7 @@
       "name": "Speed dating 1",
       "group": "presentation",
       "slots": [
-        { "id": "title", "label": "Title", "texts": [0], "placeholder": "Speed dating 1", "maxWidth": 370, "align": "center", "maxLines": 1 },
+        { "id": "title", "label": "Titre", "texts": [0], "placeholder": "Speed dating 1", "maxWidth": 370, "align": "center", "maxLines": 1 },
         { "id": "q1", "label": "Question 1", "texts": [1, 2, 3], "placeholder": "Écrivez ici votre première question pour le groupe.", "maxWidth": 780, "align": "left", "maxLines": 3 },
         { "id": "q2", "label": "Question 2", "texts": [4, 5, 6], "placeholder": "Écrivez ici votre deuxième question pour le groupe.", "maxWidth": 780, "align": "left", "maxLines": 3 },
         { "id": "q3", "label": "Question 3", "texts": [7, 8], "placeholder": "Écrivez ici votre troisième question pour le groupe.", "maxWidth": 780, "align": "left", "maxLines": 3 }
@@ -110,7 +110,7 @@
       "name": "Speed dating 2",
       "group": "presentation",
       "slots": [
-        { "id": "title", "label": "Title", "texts": [0], "placeholder": "Speed dating 2", "maxWidth": 370, "align": "center", "maxLines": 1 },
+        { "id": "title", "label": "Titre", "texts": [0], "placeholder": "Speed dating 2", "maxWidth": 370, "align": "center", "maxLines": 1 },
         { "id": "q1", "label": "Question 1", "texts": [3, 4, 5], "placeholder": "Écrivez ici votre première question pour le groupe.", "maxWidth": 780, "align": "left", "maxLines": 3 },
         { "id": "q2", "label": "Question 2", "texts": [1, 2], "placeholder": "Écrivez ici votre deuxième question pour le groupe.", "maxWidth": 780, "align": "left", "maxLines": 3 },
         { "id": "q3", "label": "Question 3", "texts": [6, 7], "placeholder": "Écrivez ici votre troisième question pour le groupe.", "maxWidth": 780, "align": "left", "maxLines": 3 }
@@ -119,30 +119,30 @@
     {
       "id": "mots",
       "file": "mots.svg",
-      "name": "Vocabulary",
+      "name": "Vocabulaire",
       "group": "presentation",
       "slots": [
-        { "id": "title", "label": "Title", "texts": [0], "placeholder": "Apprenez avec FRAC", "maxWidth": 520, "align": "center", "maxLines": 1 },
-        { "id": "w1-fr", "label": "1 · French", "texts": [3], "placeholder": "le mot français", "maxWidth": 370, "align": "center", "maxLines": 1 },
-        { "id": "w1-cs", "label": "1 · Czech", "texts": [4], "placeholder": "český překlad", "maxWidth": 370, "align": "center", "maxLines": 1 },
-        { "id": "w2-fr", "label": "2 · French", "texts": [1], "placeholder": "le mot français", "maxWidth": 370, "align": "center", "maxLines": 1 },
-        { "id": "w2-cs", "label": "2 · Czech", "texts": [2], "placeholder": "český překlad", "maxWidth": 370, "align": "center", "maxLines": 1 },
-        { "id": "w3-fr", "label": "3 · French", "texts": [11], "placeholder": "le mot français", "maxWidth": 370, "align": "center", "maxLines": 1 },
-        { "id": "w3-cs", "label": "3 · Czech", "texts": [12], "placeholder": "český překlad", "maxWidth": 370, "align": "center", "maxLines": 1 },
-        { "id": "w4-fr", "label": "4 · French", "texts": [9], "placeholder": "le mot français", "maxWidth": 370, "align": "center", "maxLines": 1 },
-        { "id": "w4-cs", "label": "4 · Czech", "texts": [10], "placeholder": "český překlad", "maxWidth": 370, "align": "center", "maxLines": 1 },
-        { "id": "w5-fr", "label": "5 · French", "texts": [15], "placeholder": "le mot français", "maxWidth": 370, "align": "center", "maxLines": 1 },
-        { "id": "w5-cs", "label": "5 · Czech", "texts": [16], "placeholder": "český překlad", "maxWidth": 370, "align": "center", "maxLines": 1 },
-        { "id": "w6-fr", "label": "6 · French", "texts": [7], "placeholder": "le mot français", "maxWidth": 370, "align": "center", "maxLines": 1 },
-        { "id": "w6-cs", "label": "6 · Czech", "texts": [8], "placeholder": "český překlad", "maxWidth": 370, "align": "center", "maxLines": 1 },
-        { "id": "w7-fr", "label": "7 · French", "texts": [5], "placeholder": "le mot français", "maxWidth": 370, "align": "center", "maxLines": 1 },
-        { "id": "w7-cs", "label": "7 · Czech", "texts": [6], "placeholder": "český překlad", "maxWidth": 370, "align": "center", "maxLines": 1 },
-        { "id": "w8-fr", "label": "8 · French", "texts": [19], "placeholder": "le mot français", "maxWidth": 370, "align": "center", "maxLines": 1 },
-        { "id": "w8-cs", "label": "8 · Czech", "texts": [20], "placeholder": "český překlad", "maxWidth": 370, "align": "center", "maxLines": 1 },
-        { "id": "w9-fr", "label": "9 · French", "texts": [13], "placeholder": "le mot français", "maxWidth": 370, "align": "center", "maxLines": 1 },
-        { "id": "w9-cs", "label": "9 · Czech", "texts": [14], "placeholder": "český překlad", "maxWidth": 370, "align": "center", "maxLines": 1 },
-        { "id": "w10-fr", "label": "10 · French", "texts": [17], "placeholder": "le mot français", "maxWidth": 370, "align": "center", "maxLines": 1 },
-        { "id": "w10-cs", "label": "10 · Czech", "texts": [18], "placeholder": "český překlad", "maxWidth": 370, "align": "center", "maxLines": 1 }
+        { "id": "title", "label": "Titre", "texts": [0], "placeholder": "Apprenez avec FRAC", "maxWidth": 520, "align": "center", "maxLines": 1 },
+        { "id": "w1-fr", "label": "1 · français", "texts": [3], "placeholder": "le mot français", "maxWidth": 370, "align": "center", "maxLines": 1 },
+        { "id": "w1-cs", "label": "1 · tchèque", "texts": [4], "placeholder": "český překlad", "maxWidth": 370, "align": "center", "maxLines": 1 },
+        { "id": "w2-fr", "label": "2 · français", "texts": [1], "placeholder": "le mot français", "maxWidth": 370, "align": "center", "maxLines": 1 },
+        { "id": "w2-cs", "label": "2 · tchèque", "texts": [2], "placeholder": "český překlad", "maxWidth": 370, "align": "center", "maxLines": 1 },
+        { "id": "w3-fr", "label": "3 · français", "texts": [11], "placeholder": "le mot français", "maxWidth": 370, "align": "center", "maxLines": 1 },
+        { "id": "w3-cs", "label": "3 · tchèque", "texts": [12], "placeholder": "český překlad", "maxWidth": 370, "align": "center", "maxLines": 1 },
+        { "id": "w4-fr", "label": "4 · français", "texts": [9], "placeholder": "le mot français", "maxWidth": 370, "align": "center", "maxLines": 1 },
+        { "id": "w4-cs", "label": "4 · tchèque", "texts": [10], "placeholder": "český překlad", "maxWidth": 370, "align": "center", "maxLines": 1 },
+        { "id": "w5-fr", "label": "5 · français", "texts": [15], "placeholder": "le mot français", "maxWidth": 370, "align": "center", "maxLines": 1 },
+        { "id": "w5-cs", "label": "5 · tchèque", "texts": [16], "placeholder": "český překlad", "maxWidth": 370, "align": "center", "maxLines": 1 },
+        { "id": "w6-fr", "label": "6 · français", "texts": [7], "placeholder": "le mot français", "maxWidth": 370, "align": "center", "maxLines": 1 },
+        { "id": "w6-cs", "label": "6 · tchèque", "texts": [8], "placeholder": "český překlad", "maxWidth": 370, "align": "center", "maxLines": 1 },
+        { "id": "w7-fr", "label": "7 · français", "texts": [5], "placeholder": "le mot français", "maxWidth": 370, "align": "center", "maxLines": 1 },
+        { "id": "w7-cs", "label": "7 · tchèque", "texts": [6], "placeholder": "český překlad", "maxWidth": 370, "align": "center", "maxLines": 1 },
+        { "id": "w8-fr", "label": "8 · français", "texts": [19], "placeholder": "le mot français", "maxWidth": 370, "align": "center", "maxLines": 1 },
+        { "id": "w8-cs", "label": "8 · tchèque", "texts": [20], "placeholder": "český překlad", "maxWidth": 370, "align": "center", "maxLines": 1 },
+        { "id": "w9-fr", "label": "9 · français", "texts": [13], "placeholder": "le mot français", "maxWidth": 370, "align": "center", "maxLines": 1 },
+        { "id": "w9-cs", "label": "9 · tchèque", "texts": [14], "placeholder": "český překlad", "maxWidth": 370, "align": "center", "maxLines": 1 },
+        { "id": "w10-fr", "label": "10 · français", "texts": [17], "placeholder": "le mot français", "maxWidth": 370, "align": "center", "maxLines": 1 },
+        { "id": "w10-cs", "label": "10 · tchèque", "texts": [18], "placeholder": "český překlad", "maxWidth": 370, "align": "center", "maxLines": 1 }
       ]
     }
 

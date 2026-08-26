@@ -11,6 +11,11 @@ dependency that is not committed to this repo: `index.html`, `app.js`,
 `styles.css`, the fonts and the templates are served exactly as they are.
 Nothing you type or upload leaves the browser.
 
+The interface is in French, because the club is. Everything a person reads on
+the page — labels, hints, warnings, buttons, the placeholders each field opens
+on — is French; the code, its comments, this README and the diagnostics that go
+to the browser console stay in English.
+
 ## The templates
 
 Nine templates ship with it, all exported from Affinity Designer. They are the
@@ -28,9 +33,9 @@ redraws artwork. The picker groups them the way the manifest says.
 
 Every field opens on a French placeholder rather than on the last real post,
 so nothing has to be cleared before it can be filled in. Inside a group, a
-**Next** button in the top bar walks to the following template, which is how you
-get through the six presentation slides without going back to the picker between
-each one.
+**Suivant** button in the top bar walks to the following template, which is how
+you get through the six presentation slides without going back to the picker
+between each one.
 
 The post and the story always carry the same words, so they are one entry:
 filling them in twice was only ever a way to get them out of step. A `pair` in

@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Fracify — FRAC graphics generator</title>
-<meta name="description" content="Fill in the texts, drop in the photos, export the post. No Affinity, no backend.">
+<title>Fracify — les visuels du club FRAC</title>
+<meta name="description" content="Remplissez les textes, ajoutez les photos, exportez le visuel. Sans Affinity, sans serveur.">
 <meta name="color-scheme" content="dark">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b1030'/%3E%3Crect x='4' y='7' width='6' height='18' fill='%230055a4'/%3E%3Crect x='13' y='7' width='6' height='18' fill='%23eef1f8'/%3E%3Crect x='22' y='7' width='6' height='18' fill='%23ef4135'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="styles.css">
@@ -18,12 +18,12 @@
     <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
     <span class="brand-text">
       <strong>Fracify</strong>
-      <small>graphics for the FRAC club</small>
+      <small>les visuels du club FRAC</small>
     </span>
   </div>
   <div class="topbar-actions">
     <button type="button" id="btn-next" class="btn btn-ghost is-hidden"></button>
-    <button type="button" id="btn-back" class="btn btn-ghost is-hidden">All templates</button>
+    <button type="button" id="btn-back" class="btn btn-ghost is-hidden">Tous les modèles</button>
   </div>
 </header>
 
@@ -31,13 +31,13 @@
 
 <main>
 
-  <section id="picker" class="picker" aria-label="Templates">
-    <h1 class="section-title">Pick a template</h1>
+  <section id="picker" class="picker" aria-label="Modèles">
+    <h1 class="section-title">Choisissez un modèle</h1>
     <div id="picker-groups"></div>
-    <p id="picker-status" class="muted">Loading templates…</p>
+    <p id="picker-status" class="muted">Chargement des modèles…</p>
   </section>
 
-  <section id="editor" class="editor is-hidden" aria-label="Editor">
+  <section id="editor" class="editor is-hidden" aria-label="Éditeur">
 
     <div class="pane pane-form">
       <div class="pane-head">
@@ -46,16 +46,16 @@
       </div>
       <div id="fields" class="fields"></div>
       <div class="pane-foot">
-        <button type="button" id="btn-reset" class="btn btn-ghost">Reset to template defaults</button>
+        <button type="button" id="btn-reset" class="btn btn-ghost">Revenir aux valeurs par défaut</button>
       </div>
     </div>
 
     <div class="pane pane-preview">
       <div class="preview-sticky">
-        <div id="stage" class="stage" aria-label="Live preview"></div>
+        <div id="stage" class="stage" aria-label="Aperçu en direct"></div>
         <div class="actions">
-          <button type="button" id="btn-png" class="btn btn-primary">Export PNG</button>
-          <button type="button" id="btn-svg" class="btn btn-ghost">Download SVG</button>
+          <button type="button" id="btn-png" class="btn btn-primary">Exporter en PNG</button>
+          <button type="button" id="btn-svg" class="btn btn-ghost">Télécharger le SVG</button>
         </div>
         <p id="export-status" class="muted export-status"></p>
       </div>
@@ -66,7 +66,7 @@
 </main>
 
 <footer class="footer">
-  <span>Templates are the source of truth — this page only fills them in.</span>
+  <span>Les modèles font foi — cette page ne fait que les remplir.</span>
 </footer>
 
 <script src="fonts/embedded-fonts.js"></script>

@@ -209,7 +209,7 @@
           if (images[i].getAttribute('id') === def.image) { image = i; break; }
         }
         if (image === null) {
-          problems.push('image ' + def.image + ' (slot "' + def.id + '") is not in this file');
+          problems.push('image ' + def.image + ' (champ « ' + def.id + ' ») absente de ce fichier');
           return;
         }
         found.push({ def: def, imageIndex: image });
@@ -218,7 +218,7 @@
       var indices = def.texts || [];
       var missing = indices.filter(function (n) { return !texts[n]; });
       if (missing.length) {
-        problems.push('slot "' + def.id + '" points at <text> ' + missing.join(', ') + ', which this file does not have');
+        problems.push('le champ « ' + def.id + ' » vise <text> ' + missing.join(', ') + ', absent de ce fichier');
         return;
       }
       found.push({ def: def, textIndices: indices });
@@ -312,7 +312,7 @@
       var problems = [];
 
       var raw = discoverSlots(root, texts, images);
-      var source = 'slot: layer names';
+      var source = 'les calques nommés slot:';
       if (!raw.length && entry.slots && entry.slots.length) {
         raw = slotsFromManifest(entry.slots, texts, images, problems);
         source = 'templates/manifest.json';
@@ -841,7 +841,7 @@
       for (var i = 0; i < all.length; i++) {
         if (all[i].id === id) return all[i];
       }
-      throw new Error('the manifest pairs in "' + id + '", which it does not define');
+      throw new Error('le manifeste associe « ' + id + ' », qui n’y est pas défini');
     });
   }
 
@@ -864,7 +864,7 @@
     shot.onload = function () {
       thumb.replaceChild(shot, fallback);
       meta.textContent = entry.pair
-        ? entry.pair.length + ' sizes, one form'
+        ? entry.pair.length + ' formats, un seul formulaire'
         : ratioLabel(shot.naturalWidth, shot.naturalHeight);
     };
     shot.src = TEMPLATE_DIR + 'thumbs/' + (entry.pair ? entry.pair[0] : entry.id) + '.jpg';
@@ -907,7 +907,7 @@
     // A template that names no group, or one the manifest never declares, still
     // has to turn up somewhere.
     var loose = entries.filter(function (entry) { return !grouped[entry.id]; });
-    if (loose.length) ui.pickerGroups.appendChild(buildGroup('Other', loose));
+    if (loose.length) ui.pickerGroups.appendChild(buildGroup('Autres', loose));
     state.entries = entries;
     return entries;
   }
@@ -966,7 +966,7 @@
   }
 
   function openWorkspace(entry, card) {
-    ui.pickerStatus.textContent = 'Loading ' + entry.name + '…';
+    ui.pickerStatus.textContent = 'Chargement de ' + entry.name + '…';
     var members;
     try {
       members = membersOf(entry);
@@ -981,20 +981,20 @@
       templates.forEach(function (template) {
         if (!template.slots.length) {
           problems.push(template.entry.name +
-            ' has no slot: layer names and no slots in templates/manifest.json');
+            ' n’a ni calques nommés slot: ni champs dans templates/manifest.json');
         }
         template.problems.forEach(function (problem) {
           problems.push(template.entry.name + ': ' + problem);
         });
       });
       if (templates.some(function (template) { return !template.slots.length; })) {
-        markUnsupported(entry, 'Unsupported: ' + problems.join('; ') + '.');
+        markUnsupported(entry, 'Non pris en charge : ' + problems.join(' ; ') + '.');
         ui.pickerStatus.textContent = '';
         return;
       }
       if (problems.length) {
-        notice('<strong>' + entry.name + ':</strong> ' + problems.join('; ') +
-          '. Those fields are missing from the form; the rest works.');
+        notice('<strong>' + entry.name + ' :</strong> ' + problems.join(' ; ') +
+          '. Ces champs manquent au formulaire ; le reste fonctionne.');
       }
       state.workspace = buildWorkspace(entry, templates);
       restore(state.workspace);
@@ -1003,7 +1003,7 @@
       if (location.hash.slice(1) !== entry.id) location.hash = entry.id;
     }).catch(function (err) {
       ui.pickerStatus.textContent = '';
-      markUnsupported(entry, 'Could not load: ' + err.message);
+      markUnsupported(entry, 'Chargement impossible : ' + err.message);
       console.error(err);
     });
     if (card) card.blur();
@@ -1027,7 +1027,7 @@
         field.offsetY = photo ? (photo.y || 0) : 0;
         field.zoom = photo && photo.zoom ? photo.zoom : 100;
         field.blur = photo ? (photo.blur || 0) : 0;
-        field.fileName = photo ? (photo.name || 'saved photo') : '';
+        field.fileName = photo ? (photo.name || 'photo enregistrée') : '';
       }
     });
   }
@@ -1036,7 +1036,7 @@
     var many = workspace.templates.length > 1;
     var sizes = workspace.templates.map(function (t) { return t.width + ' × ' + t.height; });
     ui.editorTitle.textContent = workspace.entry.name;
-    ui.editorKind.textContent = sizes.join('  ·  ') + '  ·  fields from ' +
+    ui.editorKind.textContent = sizes.join('  ·  ') + '  ·  champs définis par ' +
       workspace.templates[0].source;
     ui.picker.classList.add('is-hidden');
     ui.editor.classList.remove('is-hidden');
@@ -1046,14 +1046,14 @@
     var following = nextInGroup(workspace.entry);
     ui.next.classList.toggle('is-hidden', !following);
     if (following) {
-      ui.next.textContent = 'Next: ' + following.name + '  →';
+      ui.next.textContent = 'Suivant : ' + following.name + '  →';
       ui.next.onclick = function () {
         flushSave();
         openWorkspace(following, null);
       };
     }
-    ui.png.textContent = many ? 'Export both PNGs' : 'Export PNG';
-    ui.svg.textContent = many ? 'Download both SVGs' : 'Download SVG';
+    ui.png.textContent = many ? 'Exporter les deux PNG' : 'Exporter en PNG';
+    ui.svg.textContent = many ? 'Télécharger les deux SVG' : 'Télécharger le SVG';
 
     buildStage(workspace);
     buildFields(workspace);
@@ -1119,12 +1119,12 @@
     var warn = field.ui.warn;
     if (overflow) {
       warn.className = 'field-warn is-error';
-      warn.textContent = 'Still does not fit at ' + Math.round(size) + ' px — shorten the text.';
+      warn.textContent = 'Ne tient toujours pas à ' + Math.round(size) + ' px — raccourcissez le texte.';
       warn.classList.remove('is-hidden');
     } else if (shrunk) {
       warn.className = 'field-warn';
-      warn.textContent = 'Shrunk from ' + Math.round(field.fontSize) + ' px to ' + Math.round(size) +
-        ' px to fit. That is smaller than the template was designed for.';
+      warn.textContent = 'Réduit de ' + Math.round(field.fontSize) + ' px à ' + Math.round(size) +
+        ' px pour tenir. C’est plus petit que ce que le modèle prévoit.';
       warn.classList.remove('is-hidden');
     } else {
       warn.classList.add('is-hidden');
@@ -1143,8 +1143,8 @@
     state.saveTimer = setTimeout(function () {
       if (!state.workspace) return;
       if (!saveState(state.workspace)) {
-        notice('Your browser ran out of local storage, so the photos are not being remembered — ' +
-          'the texts still are.');
+        notice('Le stockage local du navigateur est plein : les photos ne sont plus mémorisées — ' +
+          'les textes le sont toujours.');
       }
     }, 400);
   }
@@ -1185,7 +1185,8 @@
 
     if (field.maxLines > 1) {
       wrap.appendChild(make('p', 'field-note',
-        'Wraps automatically, up to ' + field.maxLines + ' lines. Press Enter to force a break.'));
+        'Retour à la ligne automatique, ' + field.maxLines +
+        ' lignes au maximum. Entrée pour forcer un saut.'));
     } else if (field.hint) {
       wrap.appendChild(make('p', 'field-note', field.hint));
     }
@@ -1200,7 +1201,7 @@
 
     var box = make('div', 'photo-slot');
     var row = make('div', 'photo-row');
-    var preview = make('div', 'photo-preview', 'none');
+    var preview = make('div', 'photo-preview', 'aucune');
     var actions = make('div', 'photo-actions');
 
     var input = document.createElement('input');
@@ -1209,13 +1210,13 @@
     input.id = 'photo-' + field.id;
     input.className = 'is-hidden';
 
-    var pick = make('button', 'btn btn-small', 'Choose photo…');
+    var pick = make('button', 'btn btn-small', 'Choisir une photo…');
     pick.type = 'button';
     pick.onclick = function () { input.click(); };
 
     var shapes = field.members.map(function (slot) {
       return slot.width + ' × ' + slot.height;
-    }).join(' and ');
+    }).join(' et ');
     var name = make('div', 'photo-name', field.fileName || shapes + ' px');
 
     input.onchange = function () {
@@ -1231,7 +1232,7 @@
         scheduleSave();
       }).catch(function () {
         URL.revokeObjectURL(url);
-        name.textContent = 'That file could not be read as an image.';
+        name.textContent = 'Ce fichier n’a pas pu être lu comme une image.';
       });
     };
 
@@ -1253,18 +1254,18 @@
   }
 
   function shift(value, positive, negative) {
-    return value === 0 ? 'centre' : (value > 0 ? positive : negative) + ' ' + Math.abs(value) + '%';
+    return value === 0 ? 'centré' : (value > 0 ? positive : negative) + ' ' + Math.abs(value) + '%';
   }
 
   var PHOTO_CONTROLS = [
     { key: 'offsetX', label: 'X', min: -100, max: 100,
-      format: function (v) { return shift(v, 'right', 'left'); } },
+      format: function (v) { return shift(v, 'droite', 'gauche'); } },
     { key: 'offsetY', label: 'Y', min: -100, max: 100,
-      format: function (v) { return shift(v, 'down', 'up'); } },
+      format: function (v) { return shift(v, 'bas', 'haut'); } },
     { key: 'zoom', label: 'Zoom', min: 100, max: 250,
       format: function (v) { return v + ' %'; } },
-    { key: 'blur', label: 'Blur', min: 0, max: 40,
-      format: function (v) { return v ? v + ' px' : 'off'; } }
+    { key: 'blur', label: 'Flou', min: 0, max: 40,
+      format: function (v) { return v ? v + ' px' : 'aucun'; } }
   ];
 
   function buildSlider(field, control) {
@@ -1321,13 +1322,13 @@
 
   function exportOne(template, button) {
     if (button) button.disabled = true;
-    ui.exportStatus.textContent = 'Rendering ' + template.entry.name + ' at ' +
+    ui.exportStatus.textContent = 'Rendu de ' + template.entry.name + ' en ' +
       template.width + ' × ' + template.height + '…';
     return renderPNG(template).then(function (blob) {
       saveBlob(blob, fileName(template, 'png'));
-      ui.exportStatus.textContent = template.entry.name + ': ' + Math.round(blob.size / 1024) + ' kB.';
+      ui.exportStatus.textContent = template.entry.name + ' : ' + Math.round(blob.size / 1024) + ' ko.';
     }).catch(function (err) {
-      ui.exportStatus.textContent = 'Export failed: ' + err.message;
+      ui.exportStatus.textContent = 'Échec de l’export : ' + err.message;
       console.error(err);
     }).then(function () {
       if (button) button.disabled = false;
@@ -1337,7 +1338,7 @@
   function downloadSVG(template) {
     var svg = buildExportSVG(template);
     saveBlob(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }), fileName(template, 'svg'));
-    ui.exportStatus.textContent = template.entry.name + ': SVG saved with the fonts embedded.';
+    ui.exportStatus.textContent = template.entry.name + ' : SVG enregistré avec les polices intégrées.';
   }
 
   ui.back.onclick = function () {
@@ -1358,7 +1359,7 @@
     var hasPhoto = workspace.slots.some(function (field) {
       return field.kind === 'image' && field.source;
     });
-    if (hasPhoto && !window.confirm('This clears the texts and the photos you uploaded. Continue?')) return;
+    if (hasPhoto && !window.confirm('Cela efface les textes et les photos ajoutées. Continuer ?')) return;
     forgetState(workspace.entry.id);
     workspace.slots.forEach(function (field) {
       if (field.kind === 'text') {
@@ -1387,7 +1388,7 @@
     (function next() {
       if (!queue.length) {
         ui.png.disabled = false;
-        if (workspace.templates.length > 1) ui.exportStatus.textContent = 'Both exported.';
+        if (workspace.templates.length > 1) ui.exportStatus.textContent = 'Les deux sont exportés.';
         return;
       }
       exportOne(queue.shift(), null).then(function () { setTimeout(next, 400); });
@@ -1418,7 +1419,8 @@
       .then(function (text) {
         state.manifest = JSON.parse(text);
         var entries = buildPicker(state.manifest);
-        ui.pickerStatus.textContent = entries.length + ' to choose from. Nothing you type leaves this browser.';
+        ui.pickerStatus.textContent = entries.length +
+          ' au choix. Rien de ce que vous saisissez ne quitte ce navigateur.';
         // index.html#event opens straight into that editor.
         var wanted = decodeURIComponent(location.hash.slice(1));
         var direct = entries.filter(function (e) { return e.id === wanted; })[0];
@@ -1428,12 +1430,12 @@
         console.error(err);
         if (location.protocol === 'file:') {
           ui.pickerStatus.textContent = '';
-          notice('<strong>Opened straight from the disk.</strong> Browsers refuse to read ' +
-            '<code>templates/</code> over <code>file://</code>, so nothing can load. Serve the folder instead — ' +
-            '<code>python -m http.server</code> in this directory, then open ' +
-            '<code>http://localhost:8000/</code>. Any static host works, including GitHub Pages.');
+          notice('<strong>Ouvert directement depuis le disque.</strong> Les navigateurs refusent de lire ' +
+            '<code>templates/</code> via <code>file://</code>, donc rien ne peut se charger. Servez plutôt le ' +
+            'dossier — <code>python -m http.server</code> dans ce répertoire, puis ouvrez ' +
+            '<code>http://localhost:8000/</code>. N’importe quel hébergement statique convient, GitHub Pages compris.');
         } else {
-          ui.pickerStatus.textContent = 'Could not read templates/manifest.json — ' + err.message;
+          ui.pickerStatus.textContent = 'Lecture de templates/manifest.json impossible — ' + err.message;
         }
       });
   }
