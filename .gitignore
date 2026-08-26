@@ -5,6 +5,7 @@ FOREMAN-REPO-TEMPLATE.txt
 FRSCRIPT.TTF
 .env
 .fidelity/
+.work/
 .fontcache/
 __pycache__/
 *.pyc
