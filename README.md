@@ -88,7 +88,16 @@ drawn on a canvas is an isolated document: the page's `@font-face` rules never
 reach it, and Metropolis would quietly become whatever the system offers. Before
 rasterising, the faces are inlined into `<defs>` as `data:font/woff2;base64`.
 See [fonts/README.md](fonts/README.md) for what is shipped and why Arial and
-French Script MT are not.
+French Script MT are not. The "Frac" wordmark is stored as curves instead of
+text, so it needs no font at all:
+
+```sh
+python3 tools/outline-logo.py --font /path/to/FRSCRIPT.TTF templates/post.svg
+```
+
+That is the same thing Affinity's "convert to curves" does on export. It only
+touches the text elements set in that font, leaves the rest of the file byte for
+byte alone, and never puts the font in the repo.
 
 **The root has no pixel size.** The templates say `width="100%" height="100%"`,
 which Safari renders blank or badly scaled once the file is in an `<img>`. The

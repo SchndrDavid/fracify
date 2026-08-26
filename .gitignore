@@ -1,4 +1,8 @@
 FOREMAN-REPO-TEMPLATE.txt
+
+# Monotype's, not ours to redistribute. tools/outline-logo.py reads it
+# locally to convert the wordmark to curves; the font itself stays out.
+FRSCRIPT.TTF
 .env
 .fidelity/
 .fontcache/

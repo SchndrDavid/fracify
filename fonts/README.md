@@ -24,7 +24,10 @@ Two faces are deliberately missing:
 - **Arial.** It cannot be redistributed. Liberation Sans has identical metrics,
   so every Arial run in a template is switched to it when the template loads.
   Only the regular weight is shipped, because that is all the templates use.
-- **French Script MT.** Microsoft's, so it is not in this repo either. It is the
-  "Frac" wordmark in the post and story templates. Convert that text to curves
-  in Affinity; until then the app logs a warning and the browser substitutes
-  whatever cursive it has.
+- **French Script MT.** Monotype's, so it is not in this repo either. It is the
+  "Frac" wordmark in the post and story templates, where it is now stored as
+  curves rather than as text - `tools/outline-logo.py` did that with a local
+  copy of the font, which is what Affinity's "convert to curves" would have
+  done on export. Nothing has to be embedded at runtime and the wordmark is
+  right on a machine that has never seen the font. If a future export still has
+  it as live text, the app says so in the console; run the tool over the file.
