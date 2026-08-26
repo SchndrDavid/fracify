@@ -19,8 +19,8 @@ redraws artwork. The picker groups them the way the manifest says.
 
 | Group | Template | Size | What changes |
 | --- | --- | --- | --- |
-| Instagram | Instagram post | 1080 × 1080 | photo, place, time, theme, day, month |
-| Instagram | Instagram story | 1080 × 1920 | photo, place, time, theme, day, month |
+| Instagram | Instagram post | 1080 × 1080 | two photos, place, time, theme, day, month |
+| Instagram | Instagram story | 1080 × 1920 | two photos, place, time, theme, day, month |
 | Announcement | Announcement | 1080 × 1920 | photo, a two-line message |
 | Presentation | Cover | 1080 × 1080 | four separate lines |
 | Presentation | Discussion 1 / 2 | 1080 × 1080 | title and three question blocks |
@@ -100,6 +100,17 @@ python3 tools/outline-logo.py --font /path/to/FRSCRIPT.TTF templates/post.svg
 That is the same thing Affinity's "convert to curves" does on export. It only
 touches the text elements set in that font, leaves the rest of the file byte for
 byte alone, and never puts the font in the repo.
+
+**Affinity flattens a translucent layer on export.** The blue panel on the post
+and the story is drawn over the photos at 80 % opacity. The SVG export
+rasterises it and bakes whatever happened to be behind it into the bitmap, so
+the panel arrives fully opaque with a ghost of the stock photo frozen inside —
+change the photo and the panel keeps showing the old one.
+`tools/unflatten-panel.py` measures what the layer was, by rendering the
+template once without it and fitting `baked = opacity × colour + (1 − opacity) ×
+behind` over the panel's pixels, then writes the layer back as its own colour at
+its own opacity. It refuses to touch a panel that does not turn out to be one
+flat colour.
 
 **The root has no pixel size.** The templates say `width="100%" height="100%"`,
 which Safari renders blank or badly scaled once the file is in an `<img>`. The

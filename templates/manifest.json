@@ -13,7 +13,8 @@
       "name": "Instagram post",
       "group": "instagram",
       "slots": [
-        { "id": "photo", "label": "Photo", "image": "_Image1", "hint": "Fills the whole square, behind the panel." },
+        { "id": "photo-top", "label": "Top photo", "image": "_Image3", "hint": "The upper half of the diagonal split." },
+        { "id": "photo-bottom", "label": "Bottom photo", "image": "_Image1", "hint": "The lower half, and everything the top one does not cover." },
         { "id": "place", "label": "Place", "texts": [0], "maxWidth": 860, "align": "center", "maxLines": 1 },
         { "id": "time", "label": "Time", "texts": [1], "maxWidth": 860, "align": "center", "maxLines": 1 },
         { "id": "theme", "label": "Theme", "texts": [2], "maxWidth": 690, "align": "center", "maxLines": 1 },
@@ -27,7 +28,8 @@
       "name": "Instagram story",
       "group": "instagram",
       "slots": [
-        { "id": "photo", "label": "Photo", "image": "_Image1", "hint": "Fills the whole story, behind the panel." },
+        { "id": "photo-top", "label": "Top photo", "image": "_Image5", "hint": "The upper half of the diagonal split." },
+        { "id": "photo-bottom", "label": "Bottom photo", "image": "_Image2", "hint": "The lower half, and everything the top one does not cover." },
         { "id": "place", "label": "Place", "texts": [0], "maxWidth": 860, "align": "center", "maxLines": 1 },
         { "id": "time", "label": "Time", "texts": [1], "maxWidth": 860, "align": "center", "maxLines": 1 },
         { "id": "theme", "label": "Theme", "texts": [2], "maxWidth": 690, "align": "center", "maxLines": 1 },
