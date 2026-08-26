@@ -1,0 +1,9 @@
+.git
+.github
+.env
+.fidelity
+.fontcache
+__pycache__
+venv
+tools
+FOREMAN-REPO-TEMPLATE.txt
