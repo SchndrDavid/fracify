@@ -15,20 +15,22 @@ Nothing you type or upload leaves the browser.
 
 Nine templates ship with it, all exported from Affinity Designer. They are the
 source of truth — the app only substitutes text and swaps image data, it never
-redraws artwork.
+redraws artwork. The picker groups them the way the manifest says.
 
-| Template | Size | What changes |
-| --- | --- | --- |
-| Instagram post | 1080 × 1080 | two photos, place, time, theme, day, month |
-| Instagram story | 1080 × 1920 | two photos, place, time, theme, day, month |
-| Announcement | 1080 × 1920 | one photo, a two-line message |
-| Discussion 1 / 2 | 1080 × 1080 | title and three question blocks |
-| Speed dating 1 / 2 | 1080 × 1080 | title and three question blocks |
-| Vocabulary | 1080 × 1080 | title and ten French/Czech pairs |
-| Cover | 1080 × 1080 | four separate lines |
+| Group | Template | Size | What changes |
+| --- | --- | --- | --- |
+| Instagram | Instagram post | 1080 × 1080 | photo, place, time, theme, day, month |
+| Instagram | Instagram story | 1080 × 1920 | photo, place, time, theme, day, month |
+| Announcement | Announcement | 1080 × 1920 | photo, a two-line message |
+| Presentation | Cover | 1080 × 1080 | four separate lines |
+| Presentation | Discussion 1 / 2 | 1080 × 1080 | title and three question blocks |
+| Presentation | Speed dating 1 / 2 | 1080 × 1080 | title and three question blocks |
+| Presentation | Vocabulary | 1080 × 1080 | title and ten French/Czech pairs |
 
 The presentation templates share a fixed background, which is not offered for
-replacement.
+replacement. Groups, their order and the order of the templates inside them all
+come from `templates/manifest.json`; a template that names no group lands in an
+"Other" section rather than disappearing.
 
 ## Running it
 

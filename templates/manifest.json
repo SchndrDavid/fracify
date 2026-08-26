@@ -1,12 +1,17 @@
 {
   "version": 1,
   "readme": "Manual slot mapping for templates exported from Affinity Designer without slot: layer names. A template whose layers are named slot:<name> needs no slots array here - the app discovers them. 'texts' holds indices into the template's <text> elements in document order (see tools/check-manifest.py). 'image' holds the id of the <image> in <defs> whose href gets replaced.",
+  "groups": [
+    { "id": "instagram", "name": "Instagram" },
+    { "id": "announcement", "name": "Announcement" },
+    { "id": "presentation", "name": "Presentation" }
+  ],
   "templates": [
     {
       "id": "post",
       "file": "post.svg",
       "name": "Instagram post",
-      "kind": "Event",
+      "group": "instagram",
       "slots": [
         { "id": "photo", "label": "Photo", "image": "_Image1", "hint": "Fills the whole square, behind the panel." },
         { "id": "place", "label": "Place", "texts": [0], "maxWidth": 860, "align": "center", "maxLines": 1 },
@@ -20,7 +25,7 @@
       "id": "story",
       "file": "story.svg",
       "name": "Instagram story",
-      "kind": "Event",
+      "group": "instagram",
       "slots": [
         { "id": "photo", "label": "Photo", "image": "_Image1", "hint": "Fills the whole story, behind the panel." },
         { "id": "place", "label": "Place", "texts": [0], "maxWidth": 860, "align": "center", "maxLines": 1 },
@@ -34,17 +39,29 @@
       "id": "fracad",
       "file": "fracad.svg",
       "name": "Announcement",
-      "kind": "Announcement",
+      "group": "announcement",
       "slots": [
         { "id": "photo", "label": "Photo", "image": "_Image2", "hint": "Fills the whole story frame." },
         { "id": "message", "label": "Message", "texts": [0, 1], "maxWidth": 930, "align": "center", "maxLines": 2 }
       ]
     },
     {
+      "id": "cover",
+      "file": "cover.svg",
+      "name": "Cover",
+      "group": "presentation",
+      "slots": [
+        { "id": "date", "label": "Date", "texts": [1], "maxWidth": 270, "align": "center", "maxLines": 1 },
+        { "id": "title", "label": "Title", "texts": [0], "maxWidth": 860, "align": "center", "maxLines": 1 },
+        { "id": "club", "label": "Club name", "texts": [2], "maxWidth": 440, "align": "center", "maxLines": 1 },
+        { "id": "subtitle", "label": "Subtitle", "texts": [3], "maxWidth": 440, "align": "center", "maxLines": 1 }
+      ]
+    },
+    {
       "id": "dis1",
       "file": "dis1.svg",
       "name": "Discussion 1",
-      "kind": "Presentation",
+      "group": "presentation",
       "slots": [
         { "id": "title", "label": "Title", "texts": [0], "maxWidth": 370, "align": "center", "maxLines": 1 },
         { "id": "q1", "label": "Question 1", "texts": [1, 2], "maxWidth": 780, "align": "left", "maxLines": 3 },
@@ -56,7 +73,7 @@
       "id": "dis2",
       "file": "dis2.svg",
       "name": "Discussion 2",
-      "kind": "Presentation",
+      "group": "presentation",
       "slots": [
         { "id": "title", "label": "Title", "texts": [0], "maxWidth": 370, "align": "center", "maxLines": 1 },
         { "id": "q1", "label": "Question 1", "texts": [1, 2, 3], "maxWidth": 780, "align": "left", "maxLines": 3 },
@@ -68,7 +85,7 @@
       "id": "speed1",
       "file": "speed1.svg",
       "name": "Speed dating 1",
-      "kind": "Presentation",
+      "group": "presentation",
       "slots": [
         { "id": "title", "label": "Title", "texts": [0], "maxWidth": 370, "align": "center", "maxLines": 1 },
         { "id": "q1", "label": "Question 1", "texts": [1, 2, 3], "maxWidth": 780, "align": "left", "maxLines": 3 },
@@ -80,7 +97,7 @@
       "id": "speed2",
       "file": "speed2.svg",
       "name": "Speed dating 2",
-      "kind": "Presentation",
+      "group": "presentation",
       "slots": [
         { "id": "title", "label": "Title", "texts": [0], "maxWidth": 370, "align": "center", "maxLines": 1 },
         { "id": "q1", "label": "Question 1", "texts": [3, 4, 5], "maxWidth": 780, "align": "left", "maxLines": 3 },
@@ -92,7 +109,7 @@
       "id": "mots",
       "file": "mots.svg",
       "name": "Vocabulary",
-      "kind": "Presentation",
+      "group": "presentation",
       "slots": [
         { "id": "title", "label": "Title", "texts": [0], "maxWidth": 520, "align": "center", "maxLines": 1 },
         { "id": "w1-fr", "label": "1 · French", "texts": [3], "maxWidth": 370, "align": "center", "maxLines": 1 },
@@ -116,18 +133,7 @@
         { "id": "w10-fr", "label": "10 · French", "texts": [17], "maxWidth": 370, "align": "center", "maxLines": 1 },
         { "id": "w10-cs", "label": "10 · Czech", "texts": [18], "maxWidth": 370, "align": "center", "maxLines": 1 }
       ]
-    },
-    {
-      "id": "cover",
-      "file": "cover.svg",
-      "name": "Cover",
-      "kind": "Presentation",
-      "slots": [
-        { "id": "date", "label": "Date", "texts": [1], "maxWidth": 270, "align": "center", "maxLines": 1 },
-        { "id": "title", "label": "Title", "texts": [0], "maxWidth": 860, "align": "center", "maxLines": 1 },
-        { "id": "club", "label": "Club name", "texts": [2], "maxWidth": 440, "align": "center", "maxLines": 1 },
-        { "id": "subtitle", "label": "Subtitle", "texts": [3], "maxWidth": 440, "align": "center", "maxLines": 1 }
-      ]
     }
+
   ]
 }

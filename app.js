@@ -667,7 +667,7 @@
 
   var ui = {
     picker: $('#picker'),
-    pickerGrid: $('#picker-grid'),
+    pickerGroups: $('#picker-groups'),
     pickerStatus: $('#picker-status'),
     editor: $('#editor'),
     editorTitle: $('#editor-title'),
@@ -689,32 +689,80 @@
     ui.notice.classList.remove('is-hidden');
   }
 
-  function buildPicker(entries) {
-    clear(ui.pickerGrid);
-    entries.forEach(function (entry) {
-      var card = make('button', 'card');
-      card.type = 'button';
+  var FOLDER_ICON = '<svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true">' +
+    '<path d="M3 6.5A1.5 1.5 0 0 1 4.5 5h4.1c.5 0 .97.25 1.25.66l.8 1.18c.28.41.75.66 1.25.66h6.65A1.5 1.5 0 0 1 20 9v8.5a1.5 ' +
+    '1.5 0 0 1-1.5 1.5h-14A1.5 1.5 0 0 1 3 17.5v-11Z" fill="none" stroke="currentColor" stroke-width="1.6" ' +
+    'stroke-linejoin="round"/></svg>';
 
-      var thumb = make('div', 'card-thumb');
-      var fallback = make('div', 'card-thumb-fallback', entry.name.slice(0, 1).toUpperCase());
-      thumb.appendChild(fallback);
-      var shot = new Image();
-      shot.alt = '';
-      shot.loading = 'lazy';
-      shot.onload = function () { thumb.replaceChild(shot, fallback); };
-      shot.src = TEMPLATE_DIR + 'thumbs/' + entry.id + '.jpg';
+  // 1:1 and 9:16 are the two shapes the club posts; anything else is spelled
+  // out from the thumbnail rather than guessed at.
+  function ratioLabel(width, height) {
+    if (!width || !height) return '';
+    var ratio = width / height;
+    if (Math.abs(ratio - 1) < 0.02) return '1:1';
+    if (Math.abs(ratio - 9 / 16) < 0.02) return '9:16';
+    return ratio.toFixed(2).replace(/0+$/, '') + ':1';
+  }
 
-      var body = make('div', 'card-body');
-      body.appendChild(make('div', 'card-name', entry.name));
-      body.appendChild(make('div', 'card-meta', entry.kind || 'Template'));
+  function buildCard(entry) {
+    var card = make('button', 'card');
+    card.type = 'button';
 
-      card.appendChild(thumb);
-      card.appendChild(body);
-      card.onclick = function () { openTemplate(entry, card); };
-      ui.pickerGrid.appendChild(card);
-      entry._card = card;
-      entry._body = body;
+    var thumb = make('div', 'card-thumb');
+    var fallback = make('div', 'card-thumb-fallback', entry.name.slice(0, 1).toUpperCase());
+    thumb.appendChild(fallback);
+
+    var body = make('div', 'card-body');
+    var meta = make('div', 'card-meta', '');
+    body.appendChild(make('div', 'card-name', entry.name));
+    body.appendChild(meta);
+
+    var shot = new Image();
+    shot.alt = '';
+    shot.loading = 'lazy';
+    shot.onload = function () {
+      thumb.replaceChild(shot, fallback);
+      meta.textContent = ratioLabel(shot.naturalWidth, shot.naturalHeight);
+    };
+    shot.src = TEMPLATE_DIR + 'thumbs/' + entry.id + '.jpg';
+
+    card.appendChild(thumb);
+    card.appendChild(body);
+    card.onclick = function () { openTemplate(entry, card); };
+    entry._card = card;
+    entry._body = body;
+    return card;
+  }
+
+  function buildGroup(name, members) {
+    var section = make('section', 'group');
+    var title = make('h2', 'group-title');
+    title.innerHTML = FOLDER_ICON;
+    title.appendChild(make('span', null, name));
+    title.appendChild(make('span', 'group-count', String(members.length)));
+    var grid = make('div', 'picker-grid');
+    members.forEach(function (entry) { grid.appendChild(buildCard(entry)); });
+    section.appendChild(title);
+    section.appendChild(grid);
+    return section;
+  }
+
+  function buildPicker(manifest) {
+    var entries = manifest.templates || [];
+    var groups = manifest.groups || [];
+    clear(ui.pickerGroups);
+
+    var grouped = {};
+    groups.forEach(function (group) {
+      var members = entries.filter(function (entry) { return entry.group === group.id; });
+      members.forEach(function (entry) { grouped[entry.id] = true; });
+      if (members.length) ui.pickerGroups.appendChild(buildGroup(group.name, members));
     });
+
+    // A template that names no group, or one the manifest never declares, still
+    // has to turn up somewhere.
+    var loose = entries.filter(function (entry) { return !grouped[entry.id]; });
+    if (loose.length) ui.pickerGroups.appendChild(buildGroup('Other', loose));
   }
 
   function markUnsupported(entry, reason) {
@@ -1026,7 +1074,7 @@
       .then(function (text) {
         state.manifest = JSON.parse(text);
         var entries = state.manifest.templates || [];
-        buildPicker(entries);
+        buildPicker(state.manifest);
         ui.pickerStatus.textContent = entries.length + ' templates. Nothing you type leaves this browser.';
         // index.html#post opens straight into that template.
         var wanted = decodeURIComponent(location.hash.slice(1));

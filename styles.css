@@ -204,12 +204,39 @@ main { max-width: 1400px; margin: 0 auto; padding: 8px clamp(16px, 4vw, 40px) 60
 
 /* --- template picker -------------------------------------------------------- */
 
+.group { margin-top: 30px; }
+.group:first-child { margin-top: 22px; }
+
+.group-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ink-dim);
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--edge);
+}
+.group-title svg { color: var(--ink-faint); flex: none; }
+
+.group-count {
+  font-family: var(--ui);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-faint);
+  background: var(--glass);
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+
 .picker-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
   align-items: start;
   gap: 18px;
-  margin-top: 22px;
+  margin-top: 16px;
 }
 
 .card {
