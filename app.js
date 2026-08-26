@@ -1418,12 +1418,11 @@
       .then(function () { return fetchText(MANIFEST_URL); })
       .then(function (text) {
         state.manifest = JSON.parse(text);
-        var entries = buildPicker(state.manifest);
-        ui.pickerStatus.textContent = entries.length +
-          ' au choix. Rien de ce que vous saisissez ne quitte ce navigateur.';
+        buildPicker(state.manifest);
+        ui.pickerStatus.textContent = '';
         // index.html#event opens straight into that editor.
         var wanted = decodeURIComponent(location.hash.slice(1));
-        var direct = entries.filter(function (e) { return e.id === wanted; })[0];
+        var direct = (state.entries || []).filter(function (e) { return e.id === wanted; })[0];
         if (direct) openWorkspace(direct, null);
       })
       .catch(function (err) {
