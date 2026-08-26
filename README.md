@@ -131,6 +131,35 @@ A text field you have not touched keeps its original nodes untouched, so an
 export made without editing anything is identical to the template, down to the
 pixel. `tools/fidelity-test.py` is what proves it.
 
+## Re-exporting a template from Affinity
+
+Three of the four problems above are export settings, not design problems. When
+the artwork changes, export it like this and none of them happen:
+
+- **Rasterise: Nothing.** The default, "Unsupported properties", is what
+  flattens the panel and merges the photo layers — Affinity decides what it
+  cannot express and bakes whatever sits behind it into the bitmap along the
+  way. "Everything" turns the whole artboard into one image and leaves nothing
+  to fill in at all.
+- **Leave "Convert text to curves" off**, or every field disappears. The one
+  exception is the "Frac" wordmark: convert that layer to curves *in the
+  document* instead, so it needs no font and everything else stays editable.
+- **Keep the two photos as two layers.** If they are already merged in the
+  document, no export setting will separate them again.
+
+Then check what actually came out:
+
+```sh
+python3 tools/check-manifest.py --list post
+```
+
+Two 1080 × 1080 images for the photos rather than one, no `<image>` for the
+panel, five `<text>` elements, and nothing left in FrenchScriptMT. If any of
+that is off, the three tools in `tools/` put it right — `split-photo-layer.py`,
+`unflatten-panel.py` and `outline-logo.py`, in that order — but each one is
+measurement standing in for information the export threw away, so a clean export
+is always better.
+
 ## Adding a template
 
 Drop the SVG into `templates/` and give the app a way to find the editable
