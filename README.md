@@ -119,6 +119,13 @@ to the straight cut. (`tools/split-photo-layer.py` does the same job for an
 export where the two layers were rasterised into a single bitmap: it fits the
 edge between the two flat regions and splits the element in two.)
 
+**SVG cannot fill one shape with three colours.** The plate behind the
+wordmark is the French flag, so a clean export writes the whole thing as
+`fill:white` and the flag is gone. `tools/fill-shape.py` keeps the path exactly
+as it is and uses it as a clip, drawing `templates/logo-plate.png` through it
+across the shape's own bounding box, so the corners and the transforms are
+untouched.
+
 **Affinity bakes kerning against its own cut of Metropolis.** Every heading
 comes out with tspans pinning individual glyphs to absolute positions worked out
 against the exact font file the designer has installed. Any other build lays the

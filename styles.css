@@ -468,8 +468,9 @@ input[type='range'] {
   font-size: 12px;
   color: var(--ink-faint);
 }
-/* One preview needs no label telling you which one it is. */
-.stage:not(.is-multi) .canvas-name { display: none; }
+/* A single preview needs neither a label saying which one it is nor its own
+   pair of buttons - the ones under the stage already say it. */
+.stage:not(.is-multi) .canvas-foot { display: none; }
 
 .actions { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
 .export-status { font-size: 12.5px; margin-top: 8px; min-height: 18px; }

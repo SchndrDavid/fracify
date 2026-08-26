@@ -64,10 +64,9 @@
       "group": "presentation",
       "slots": [
         { "id": "date", "label": "Date", "texts": [1], "maxWidth": 270, "align": "center", "maxLines": 1 },
-        { "id": "title", "label": "Title", "texts": [0], "maxWidth": 860, "align": "center", "maxLines": 1 },
-        { "id": "club", "label": "Club name", "texts": [2], "maxWidth": 440, "align": "center", "maxLines": 1 },
-        { "id": "subtitle", "label": "Subtitle", "texts": [3], "maxWidth": 440, "align": "center", "maxLines": 1 }
-      ]
+        { "id": "title", "label": "Title", "texts": [0], "maxWidth": 860, "align": "center", "maxLines": 1 }
+      ],
+      "fixed": "The club name and its Czech subtitle never change, so they are left out of the form."
     },
     {
       "id": "dis1",
