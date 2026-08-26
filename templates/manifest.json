@@ -1,10 +1,18 @@
 {
   "version": 1,
-  "readme": "Manual slot mapping for templates exported from Affinity Designer without slot: layer names. A template whose layers are named slot:<name> needs no slots array here - the app discovers them. 'texts' holds indices into the template's <text> elements in document order (see tools/check-manifest.py). 'image' holds the id of the <image> in <defs> whose href gets replaced.",
+  "readme": "Slots map a template to the fields the app shows. A pair in 'pairs' opens several templates in one editor, where every field drives the slot of the same name in each of them. 'hidden' keeps a template out of the picker when a pair already covers it. Manual slot mapping for templates exported from Affinity Designer without slot: layer names. A template whose layers are named slot:<name> needs no slots array here - the app discovers them. 'texts' holds indices into the template's <text> elements in document order (see tools/check-manifest.py). 'image' holds the id of the <image> in <defs> whose href gets replaced.",
   "groups": [
     { "id": "instagram", "name": "Instagram" },
     { "id": "announcement", "name": "Announcement" },
     { "id": "presentation", "name": "Presentation" }
+  ],
+  "pairs": [
+    {
+      "id": "event",
+      "name": "Post + story",
+      "group": "instagram",
+      "pair": ["post", "story"]
+    }
   ],
   "templates": [
     {
@@ -12,6 +20,7 @@
       "file": "post.svg",
       "name": "Instagram post",
       "group": "instagram",
+      "hidden": true,
       "slots": [
         { "id": "photo-top", "label": "Top photo", "image": "_ImagePhotoTop", "hint": "The cutout above the diagonal." },
         { "id": "photo-bottom", "label": "Bottom photo", "image": "_ImagePhotoBottom", "hint": "Runs across the whole canvas, under the cutout." },
@@ -27,6 +36,7 @@
       "file": "story.svg",
       "name": "Instagram story",
       "group": "instagram",
+      "hidden": true,
       "slots": [
         { "id": "photo-top", "label": "Top photo", "image": "_ImagePhotoTop", "hint": "The cutout above the diagonal." },
         { "id": "photo-bottom", "label": "Bottom photo", "image": "_ImagePhotoBottom", "hint": "Runs across the whole canvas, under the cutout." },

@@ -419,20 +419,57 @@ input[type='range'] {
 
 /* --- stage ------------------------------------------------------------------ */
 
+/* Flex, not grid: an auto-sized grid track grows to the intrinsic 1080 px of
+   the preview, which makes the child's max-width:100% resolve against itself
+   and lets the page overflow sideways on a phone. */
 .stage {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 14px;
+  min-height: 220px;
+}
+
+.canvas {
+  margin: 0;
+  min-width: 0;
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.canvas-art {
   border-radius: var(--radius-sm);
   overflow: hidden;
   background: rgba(0, 0, 0, 0.4);
   border: 1px solid var(--edge);
-  /* Flex, not grid: an auto-sized grid track grows to the intrinsic 1080 px
-     of the preview, which makes the child's max-width:100% resolve against
-     itself and lets the page overflow sideways on a phone. */
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 220px;
+  min-width: 0;
 }
-.stage svg { display: block; width: 100%; height: auto; max-width: 100%; min-width: 0; }
+.canvas-art svg { display: block; width: 100%; height: auto; max-width: 100%; min-width: 0; }
+
+.canvas-foot {
+  display: flex;
+  align-items: center;
+  /* Wraps so a narrow preview does not force the page wider than the phone. */
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+.canvas-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+/* One preview needs no label telling you which one it is. */
+.stage:not(.is-multi) .canvas-name { display: none; }
 
 .actions { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
 .export-status { font-size: 12.5px; margin-top: 8px; min-height: 18px; }
@@ -482,8 +519,8 @@ input[type='range'] {
   .preview-sticky { position: static; }
   /* min-width:0 matters: a replaced element in a grid keeps its intrinsic
      width otherwise, and a 1080 px wide preview runs off a phone screen. */
-  .stage svg { width: auto; height: auto; max-width: 100%; max-height: 56vh; min-width: 0; }
-  .stage { padding: 6px; }
+  .canvas-art svg { width: auto; height: auto; max-width: 100%; max-height: 46vh; min-width: 0; }
+  .stage { gap: 10px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

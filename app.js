@@ -336,8 +336,40 @@
 
   /* --------------------------------------------------------------- mounting */
 
+  /* Two templates share a page in a paired editor, and Affinity numbers the
+   * ids in every file from scratch: both have a #_clip1, both have a #_Image3.
+   * A reference resolves to whichever came first in the document, so the story
+   * would quietly draw the post's logo. Every id gets the template's name in
+   * front of it, and every reference to it follows. */
+  function namespaceIds(root, prefix) {
+    var owners = toArray(root.querySelectorAll('[id]'));
+    if (root.getAttribute('id')) owners.push(root);
+    var renamed = {};
+    owners.forEach(function (node) {
+      var id = node.getAttribute('id');
+      renamed[id] = prefix + id;
+      node.setAttribute('id', renamed[id]);
+    });
+    if (!owners.length) return;
+
+    var all = root.getElementsByTagName('*');
+    for (var i = 0; i < all.length; i++) {
+      var attributes = all[i].attributes;
+      for (var j = 0; j < attributes.length; j++) {
+        var value = attributes[j].value;
+        if (value.indexOf('#') < 0) continue;
+        // Matches both xlink:href="#id" and any url(#id) inside a style.
+        var next = value.replace(/#([^\s"')]+)/g, function (whole, id) {
+          return renamed[id] ? '#' + renamed[id] : whole;
+        });
+        if (next !== value) attributes[j].value = next;
+      }
+    }
+  }
+
   function mount(template, container) {
     var live = template.root.cloneNode(true);
+    namespaceIds(live, template.entry.id + '--');
     clear(container);
     container.appendChild(live);
     template.live = live;
@@ -772,7 +804,7 @@
     svg: $('#btn-svg')
   };
 
-  var state = { manifest: null, template: null, saveTimer: 0 };
+  var state = { manifest: null, workspace: null, saveTimer: 0 };
 
   function notice(html) {
     ui.notice.innerHTML = html;
@@ -794,6 +826,20 @@
     return ratio.toFixed(2).replace(/0+$/, '') + ':1';
   }
 
+  /* A picker entry either names one template or pairs several under one
+   * editor. The post and the story always carry the same words, so filling
+   * them in twice was only ever a way to get them out of step. */
+  function membersOf(entry) {
+    var ids = entry.pair || [entry.id];
+    var all = (state.manifest && state.manifest.templates) || [];
+    return ids.map(function (id) {
+      for (var i = 0; i < all.length; i++) {
+        if (all[i].id === id) return all[i];
+      }
+      throw new Error('the manifest pairs in "' + id + '", which it does not define');
+    });
+  }
+
   function buildCard(entry) {
     var card = make('button', 'card');
     card.type = 'button';
@@ -812,13 +858,15 @@
     shot.loading = 'lazy';
     shot.onload = function () {
       thumb.replaceChild(shot, fallback);
-      meta.textContent = ratioLabel(shot.naturalWidth, shot.naturalHeight);
+      meta.textContent = entry.pair
+        ? entry.pair.length + ' sizes, one form'
+        : ratioLabel(shot.naturalWidth, shot.naturalHeight);
     };
-    shot.src = TEMPLATE_DIR + 'thumbs/' + entry.id + '.jpg';
+    shot.src = TEMPLATE_DIR + 'thumbs/' + (entry.pair ? entry.pair[0] : entry.id) + '.jpg';
 
     card.appendChild(thumb);
     card.appendChild(body);
-    card.onclick = function () { openTemplate(entry, card); };
+    card.onclick = function () { openWorkspace(entry, card); };
     entry._card = card;
     entry._body = body;
     return card;
@@ -838,7 +886,9 @@
   }
 
   function buildPicker(manifest) {
-    var entries = manifest.templates || [];
+    var entries = (manifest.templates || [])
+      .filter(function (entry) { return !entry.hidden; })
+      .concat(manifest.pairs || []);
     var groups = manifest.groups || [];
     clear(ui.pickerGroups);
 
@@ -853,9 +903,11 @@
     // has to turn up somewhere.
     var loose = entries.filter(function (entry) { return !grouped[entry.id]; });
     if (loose.length) ui.pickerGroups.appendChild(buildGroup('Other', loose));
+    return entries;
   }
 
   function markUnsupported(entry, reason) {
+    if (!entry._card) return;
     entry._card.classList.add('is-unsupported');
     entry._card.onclick = null;
     if (!entry._body.querySelector('.card-warn')) {
@@ -863,23 +915,71 @@
     }
   }
 
-  function openTemplate(entry, card) {
+  /* Collapses the slots of every template in the workspace into one list of
+   * fields, keyed by slot id. A field drives every slot that shares its name,
+   * which is what lets one form fill a square post and a tall story at once. */
+  function buildWorkspace(entry, templates) {
+    var order = [];
+    var byId = {};
+    templates.forEach(function (template) {
+      template.slots.forEach(function (slot) {
+        var field = byId[slot.id];
+        if (!field) {
+          field = byId[slot.id] = {
+            id: slot.id,
+            kind: slot.kind,
+            label: slot.label,
+            hint: slot.hint,
+            members: [],
+            maxLines: slot.kind === 'text' ? slot.maxLines : 0,
+            fontSize: slot.fontSize,
+            original: slot.original,
+            offsetX: 0, offsetY: 0, zoom: 100, blur: 0, frame: 0,
+            source: null, persistUrl: null, fileName: ''
+          };
+          order.push(field);
+        }
+        field.members.push(slot);
+        if (slot.kind === 'text') field.maxLines = Math.max(field.maxLines, slot.maxLines);
+      });
+    });
+    return { entry: entry, templates: templates, slots: order, values: {} };
+  }
+
+  function openWorkspace(entry, card) {
     ui.pickerStatus.textContent = 'Loading ' + entry.name + '…';
-    loadTemplate(entry).then(function (template) {
-      if (!template.slots.length) {
-        markUnsupported(entry, template.problems.length
-          ? 'Unsupported: ' + template.problems.join('; ') + '.'
-          : 'Unsupported: no slot: layer names in the file and no slots for it in templates/manifest.json.');
+    var members;
+    try {
+      members = membersOf(entry);
+    } catch (err) {
+      markUnsupported(entry, err.message);
+      ui.pickerStatus.textContent = '';
+      return;
+    }
+
+    Promise.all(members.map(loadTemplate)).then(function (templates) {
+      var problems = [];
+      templates.forEach(function (template) {
+        if (!template.slots.length) {
+          problems.push(template.entry.name +
+            ' has no slot: layer names and no slots in templates/manifest.json');
+        }
+        template.problems.forEach(function (problem) {
+          problems.push(template.entry.name + ': ' + problem);
+        });
+      });
+      if (templates.some(function (template) { return !template.slots.length; })) {
+        markUnsupported(entry, 'Unsupported: ' + problems.join('; ') + '.');
         ui.pickerStatus.textContent = '';
         return;
       }
-      if (template.problems.length) {
-        notice('<strong>' + entry.name + ':</strong> ' + template.problems.join('; ') +
+      if (problems.length) {
+        notice('<strong>' + entry.name + ':</strong> ' + problems.join('; ') +
           '. Those fields are missing from the form; the rest works.');
       }
-      state.template = template;
-      restore(template);
-      showEditor(template);
+      state.workspace = buildWorkspace(entry, templates);
+      restore(state.workspace);
+      showEditor(state.workspace);
       ui.pickerStatus.textContent = '';
       if (location.hash.slice(1) !== entry.id) location.hash = entry.id;
     }).catch(function (err) {
@@ -890,64 +990,107 @@
     if (card) card.blur();
   }
 
-  function restore(template) {
-    var saved = readState(template.entry.id) || { values: {}, photos: {} };
-    template.slots.forEach(function (slot) {
-      if (slot.kind === 'text') {
-        var value = saved.values && typeof saved.values[slot.id] === 'string'
-          ? saved.values[slot.id]
-          : slot.original;
-        template.values[slot.id] = value;
+  function restore(workspace) {
+    var saved = readState(workspace.entry.id) || { values: {}, photos: {} };
+    workspace.slots.forEach(function (field) {
+      if (field.kind === 'text') {
+        workspace.values[field.id] = saved.values && typeof saved.values[field.id] === 'string'
+          ? saved.values[field.id]
+          : field.original;
       } else {
-        var photo = saved.photos && saved.photos[slot.id];
-        slot.pendingPhoto = photo || null;
-        slot.offsetX = photo ? (photo.x || 0) : 0;
-        slot.offsetY = photo ? (photo.y || 0) : 0;
-        slot.zoom = photo && photo.zoom ? photo.zoom : 100;
-        slot.blur = photo ? (photo.blur || 0) : 0;
-        slot.fileName = photo ? (photo.name || 'saved photo') : '';
+        var photo = saved.photos && saved.photos[field.id];
+        field.pendingPhoto = photo || null;
+        field.offsetX = photo ? (photo.x || 0) : 0;
+        field.offsetY = photo ? (photo.y || 0) : 0;
+        field.zoom = photo && photo.zoom ? photo.zoom : 100;
+        field.blur = photo ? (photo.blur || 0) : 0;
+        field.fileName = photo ? (photo.name || 'saved photo') : '';
       }
     });
   }
 
-  function showEditor(template) {
-    ui.editorTitle.textContent = template.entry.name;
-    ui.editorKind.textContent = template.width + ' × ' + template.height +
-      ' · fields from ' + template.source;
+  function showEditor(workspace) {
+    var many = workspace.templates.length > 1;
+    var sizes = workspace.templates.map(function (t) { return t.width + ' × ' + t.height; });
+    ui.editorTitle.textContent = workspace.entry.name;
+    ui.editorKind.textContent = sizes.join('  ·  ') + '  ·  fields from ' +
+      workspace.templates[0].source;
     ui.picker.classList.add('is-hidden');
     ui.editor.classList.remove('is-hidden');
     ui.back.classList.remove('is-hidden');
     ui.exportStatus.textContent = '';
+    ui.png.textContent = many ? 'Export both PNGs' : 'Export PNG';
+    ui.svg.textContent = many ? 'Download both SVGs' : 'Download SVG';
 
-    mount(template, ui.stage);
-    buildFields(template);
+    buildStage(workspace);
+    buildFields(workspace);
 
-    template.slots.forEach(function (slot) {
-      if (slot.kind === 'text') {
-        applyText(template, slot);
-      } else if (slot.pendingPhoto) {
-        loadImageElement(slot.pendingPhoto.src).then(function (img) {
-          adoptImage(slot, img);
-          slot.persistUrl = slot.pendingPhoto.src;
-          applyPhoto(slot);
-          updatePhotoUI(slot);
+    workspace.slots.forEach(function (field) {
+      if (field.kind === 'text') {
+        applyText(workspace, field);
+      } else if (field.pendingPhoto) {
+        loadImageElement(field.pendingPhoto.src).then(function (img) {
+          adoptImage(field, img);
+          field.persistUrl = field.pendingPhoto.src;
+          applyPhoto(field);
+          updatePhotoUI(field);
         }).catch(function () { /* a stale photo just does not come back */ });
       }
     });
     window.scrollTo(0, 0);
   }
 
-  function applyText(template, slot) {
-    var result = renderTextSlot(slot, template.values[slot.id]);
-    if (!slot.ui) return;
-    var warn = slot.ui.warn;
-    if (result.overflow) {
+  /* Every template in the workspace gets its own canvas, side by side, with
+   * flex-grow set to its aspect ratio so a square and a nine-by-sixteen come
+   * out the same height instead of one towering over the other. */
+  function buildStage(workspace) {
+    clear(ui.stage);
+    ui.stage.classList.toggle('is-multi', workspace.templates.length > 1);
+    workspace.templates.forEach(function (template) {
+      var figure = make('figure', 'canvas');
+      figure.style.flexGrow = String(template.width / template.height);
+      var art = make('div', 'canvas-art');
+      figure.appendChild(art);
+
+      var caption = make('figcaption', 'canvas-foot');
+      caption.appendChild(make('span', 'canvas-name', template.entry.name));
+      var png = make('button', 'btn btn-small', 'PNG');
+      png.type = 'button';
+      png.onclick = function () { exportOne(template, png); };
+      var svg = make('button', 'btn btn-small', 'SVG');
+      svg.type = 'button';
+      svg.onclick = function () { downloadSVG(template); };
+      caption.appendChild(png);
+      caption.appendChild(svg);
+      figure.appendChild(caption);
+
+      ui.stage.appendChild(figure);
+      mount(template, art);
+    });
+  }
+
+  function applyText(workspace, field) {
+    var value = workspace.values[field.id];
+    var shrunk = false;
+    var overflow = false;
+    var size = field.fontSize;
+    field.members.forEach(function (slot) {
+      var result = renderTextSlot(slot, value);
+      if (result.overflow) overflow = true;
+      if (result.shrunk) {
+        shrunk = true;
+        size = Math.min(size, result.size);
+      }
+    });
+    if (!field.ui) return;
+    var warn = field.ui.warn;
+    if (overflow) {
       warn.className = 'field-warn is-error';
-      warn.textContent = 'Still does not fit at ' + Math.round(result.size) + ' px — shorten the text.';
+      warn.textContent = 'Still does not fit at ' + Math.round(size) + ' px — shorten the text.';
       warn.classList.remove('is-hidden');
-    } else if (result.shrunk) {
+    } else if (shrunk) {
       warn.className = 'field-warn';
-      warn.textContent = 'Shrunk from ' + Math.round(slot.fontSize) + ' px to ' + Math.round(result.size) +
+      warn.textContent = 'Shrunk from ' + Math.round(field.fontSize) + ' px to ' + Math.round(size) +
         ' px to fit. That is smaller than the template was designed for.';
       warn.classList.remove('is-hidden');
     } else {
@@ -958,63 +1101,64 @@
   function scheduleSave() {
     clearTimeout(state.saveTimer);
     state.saveTimer = setTimeout(function () {
-      if (!state.template) return;
-      if (!saveState(state.template)) {
-        notice('Your browser ran out of local storage, so the photos are not being remembered — the texts still are.');
+      if (!state.workspace) return;
+      if (!saveState(state.workspace)) {
+        notice('Your browser ran out of local storage, so the photos are not being remembered — ' +
+          'the texts still are.');
       }
     }, 400);
   }
 
-  function buildFields(template) {
+  function buildFields(workspace) {
     clear(ui.fields);
-    template.slots.forEach(function (slot) {
-      var field = make('div', 'field');
-      if (slot.kind === 'text') buildTextField(template, slot, field);
-      else buildPhotoField(template, slot, field);
-      ui.fields.appendChild(field);
+    workspace.slots.forEach(function (field) {
+      var wrap = make('div', 'field');
+      if (field.kind === 'text') buildTextField(workspace, field, wrap);
+      else buildPhotoField(field, wrap);
+      ui.fields.appendChild(wrap);
     });
   }
 
-  function buildTextField(template, slot, field) {
-    var id = 'f-' + slot.id;
-    var label = make('label', null, slot.label);
+  function buildTextField(workspace, field, wrap) {
+    var id = 'f-' + field.id;
+    var label = make('label', null, field.label);
     label.htmlFor = id;
-    field.appendChild(label);
+    wrap.appendChild(label);
 
     var input;
-    if (slot.maxLines > 1) {
+    if (field.maxLines > 1) {
       input = document.createElement('textarea');
-      input.rows = Math.min(4, slot.maxLines + 1);
+      input.rows = Math.min(4, field.maxLines + 1);
     } else {
       input = document.createElement('input');
       input.type = 'text';
     }
     input.id = id;
-    input.value = template.values[slot.id];
+    input.value = workspace.values[field.id];
     input.spellcheck = false;
     input.oninput = function () {
-      template.values[slot.id] = input.value;
-      applyText(template, slot);
+      workspace.values[field.id] = input.value;
+      applyText(workspace, field);
       scheduleSave();
     };
-    field.appendChild(input);
+    wrap.appendChild(input);
 
-    if (slot.maxLines > 1) {
-      field.appendChild(make('p', 'field-note',
-        'Wraps automatically, up to ' + slot.maxLines + ' lines. Press Enter to force a break.'));
-    } else if (slot.hint) {
-      field.appendChild(make('p', 'field-note', slot.hint));
+    if (field.maxLines > 1) {
+      wrap.appendChild(make('p', 'field-note',
+        'Wraps automatically, up to ' + field.maxLines + ' lines. Press Enter to force a break.'));
+    } else if (field.hint) {
+      wrap.appendChild(make('p', 'field-note', field.hint));
     }
 
     var warn = make('p', 'field-warn is-hidden');
-    field.appendChild(warn);
-    slot.ui = { input: input, warn: warn };
+    wrap.appendChild(warn);
+    field.ui = { input: input, warn: warn };
   }
 
-  function buildPhotoField(template, slot, field) {
-    field.appendChild(make('div', 'field-label', slot.label));
+  function buildPhotoField(field, wrap) {
+    wrap.appendChild(make('div', 'field-label', field.label));
 
-    var wrap = make('div', 'photo-slot');
+    var box = make('div', 'photo-slot');
     var row = make('div', 'photo-row');
     var preview = make('div', 'photo-preview', 'none');
     var actions = make('div', 'photo-actions');
@@ -1022,14 +1166,17 @@
     var input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
-    input.id = 'photo-' + slot.id;
+    input.id = 'photo-' + field.id;
     input.className = 'is-hidden';
 
     var pick = make('button', 'btn btn-small', 'Choose photo…');
     pick.type = 'button';
     pick.onclick = function () { input.click(); };
 
-    var name = make('div', 'photo-name', slot.fileName || slot.width + ' × ' + slot.height + ' px slot');
+    var shapes = field.members.map(function (slot) {
+      return slot.width + ' × ' + slot.height;
+    }).join(' and ');
+    var name = make('div', 'photo-name', field.fileName || shapes + ' px');
 
     input.onchange = function () {
       var file = input.files && input.files[0];
@@ -1037,10 +1184,10 @@
       var url = URL.createObjectURL(file);
       loadImageElement(url).then(function (img) {
         URL.revokeObjectURL(url);
-        adoptImage(slot, img);
-        slot.fileName = file.name;
-        applyPhoto(slot);
-        updatePhotoUI(slot);
+        adoptImage(field, img);
+        field.fileName = file.name;
+        applyPhoto(field);
+        updatePhotoUI(field);
         scheduleSave();
       }).catch(function () {
         URL.revokeObjectURL(url);
@@ -1052,18 +1199,17 @@
     actions.appendChild(name);
     row.appendChild(preview);
     row.appendChild(actions);
-    wrap.appendChild(row);
-    wrap.appendChild(input);
+    box.appendChild(row);
+    box.appendChild(input);
 
-    slot.ui = { preview: preview, name: name, sliders: {} };
+    field.ui = { preview: preview, name: name, sliders: {} };
     PHOTO_CONTROLS.forEach(function (control) {
-      wrap.appendChild(buildSlider(slot, control));
+      box.appendChild(buildSlider(field, control));
     });
 
-    if (slot.hint) wrap.appendChild(make('p', 'field-note', slot.hint));
-
-    field.appendChild(wrap);
-    updatePhotoUI(slot);
+    if (field.hint) box.appendChild(make('p', 'field-note', field.hint));
+    wrap.appendChild(box);
+    updatePhotoUI(field);
   }
 
   function shift(value, positive, negative) {
@@ -1081,49 +1227,77 @@
       format: function (v) { return v ? v + ' px' : 'off'; } }
   ];
 
-  function buildSlider(slot, control) {
+  function buildSlider(field, control) {
     var row = make('div', 'slider-row');
     var input = document.createElement('input');
     input.type = 'range';
     input.min = String(control.min);
     input.max = String(control.max);
     input.step = '1';
-    input.value = String(slot[control.key]);
-    input.disabled = !slot.source;
-    input.setAttribute('aria-label', slot.label + ' — ' + control.label);
+    input.value = String(field[control.key]);
+    input.disabled = !field.source;
+    input.setAttribute('aria-label', field.label + ' — ' + control.label);
 
-    var readout = make('span', 'slider-readout', control.format(slot[control.key]));
+    var readout = make('span', 'slider-readout', control.format(field[control.key]));
     input.oninput = function () {
-      slot[control.key] = parseInt(input.value, 10) || 0;
-      readout.textContent = control.format(slot[control.key]);
-      schedulePhoto(slot);
+      field[control.key] = parseInt(input.value, 10) || 0;
+      readout.textContent = control.format(field[control.key]);
+      schedulePhoto(field);
       scheduleSave();
     };
 
     row.appendChild(make('span', 'slider-label', control.label));
     row.appendChild(input);
     row.appendChild(readout);
-    slot.ui.sliders[control.key] = { input: input, readout: readout, format: control.format };
+    field.ui.sliders[control.key] = { input: input, readout: readout, format: control.format };
     return row;
   }
 
-  function updatePhotoUI(slot) {
-    if (!slot.ui) return;
+  function updatePhotoUI(field) {
+    if (!field.ui) return;
     PHOTO_CONTROLS.forEach(function (control) {
-      var slider = slot.ui.sliders[control.key];
+      var slider = field.ui.sliders[control.key];
       if (!slider) return;
-      slider.input.disabled = !slot.source;
-      slider.input.value = String(slot[control.key]);
-      slider.readout.textContent = control.format(slot[control.key]);
+      slider.input.disabled = !field.source;
+      slider.input.value = String(field[control.key]);
+      slider.readout.textContent = control.format(field[control.key]);
     });
-    if (slot.fileName) slot.ui.name.textContent = slot.fileName;
-    if (slot.source) {
+    if (field.fileName) field.ui.name.textContent = field.fileName;
+    if (field.source) {
       // The swatch shows the source, not the crop, so moving a slider never
       // has to redraw it.
-      slot.ui.preview.textContent = '';
-      slot.ui.preview.style.backgroundImage = 'url("' +
-        drawTo(slot.source, 148, Math.round(148 * slot.source.height / slot.source.width)).toDataURL('image/jpeg', 0.7) + '")';
+      field.ui.preview.textContent = '';
+      field.ui.preview.style.backgroundImage = 'url("' +
+        drawTo(field.source, 148, Math.round(148 * field.source.height / field.source.width))
+          .toDataURL('image/jpeg', 0.7) + '")';
     }
+  }
+
+  /* -------------------------------------------------------------- actions */
+
+  function fileName(template, extension) {
+    return 'frac-' + template.entry.id + '-' + stamp() + '.' + extension;
+  }
+
+  function exportOne(template, button) {
+    if (button) button.disabled = true;
+    ui.exportStatus.textContent = 'Rendering ' + template.entry.name + ' at ' +
+      template.width + ' × ' + template.height + '…';
+    return renderPNG(template).then(function (blob) {
+      saveBlob(blob, fileName(template, 'png'));
+      ui.exportStatus.textContent = template.entry.name + ': ' + Math.round(blob.size / 1024) + ' kB.';
+    }).catch(function (err) {
+      ui.exportStatus.textContent = 'Export failed: ' + err.message;
+      console.error(err);
+    }).then(function () {
+      if (button) button.disabled = false;
+    });
+  }
+
+  function downloadSVG(template) {
+    var svg = buildExportSVG(template);
+    saveBlob(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }), fileName(template, 'svg'));
+    ui.exportStatus.textContent = template.entry.name + ': SVG saved with the fonts embedded.';
   }
 
   ui.back.onclick = function () {
@@ -1132,56 +1306,58 @@
     ui.picker.classList.remove('is-hidden');
     ui.notice.classList.add('is-hidden');
     clear(ui.stage);
-    state.template = null;
+    state.workspace = null;
     if (location.hash) location.hash = '';
   };
 
   ui.reset.onclick = function () {
-    var template = state.template;
-    if (!template) return;
-    var hasPhoto = template.slots.some(function (slot) { return slot.kind === 'image' && slot.source; });
+    var workspace = state.workspace;
+    if (!workspace) return;
+    var hasPhoto = workspace.slots.some(function (field) {
+      return field.kind === 'image' && field.source;
+    });
     if (hasPhoto && !window.confirm('This clears the texts and the photos you uploaded. Continue?')) return;
-    forgetState(template.entry.id);
-    template.slots.forEach(function (slot) {
-      if (slot.kind === 'text') {
-        template.values[slot.id] = slot.original;
+    forgetState(workspace.entry.id);
+    workspace.slots.forEach(function (field) {
+      if (field.kind === 'text') {
+        workspace.values[field.id] = field.original;
       } else {
-        slot.source = null;
-        slot.persistUrl = null;
-        slot.offsetX = 0;
-        slot.offsetY = 0;
-        slot.zoom = 100;
-        slot.blur = 0;
-        slot.fileName = '';
-        slot.pendingPhoto = null;
+        field.source = null;
+        field.persistUrl = null;
+        field.offsetX = 0;
+        field.offsetY = 0;
+        field.zoom = 100;
+        field.blur = 0;
+        field.fileName = '';
+        field.pendingPhoto = null;
       }
     });
-    showEditor(template);
+    showEditor(workspace);
   };
 
   ui.png.onclick = function () {
-    var template = state.template;
-    if (!template) return;
+    var workspace = state.workspace;
+    if (!workspace) return;
     ui.png.disabled = true;
-    ui.exportStatus.textContent = 'Rendering ' + template.width + ' × ' + template.height + '…';
-    renderPNG(template).then(function (blob) {
-      saveBlob(blob, 'frac-' + template.entry.id + '-' + stamp() + '.png');
-      ui.exportStatus.textContent = 'Exported ' + Math.round(blob.size / 1024) + ' kB.';
-    }).catch(function (err) {
-      ui.exportStatus.textContent = 'Export failed: ' + err.message;
-      console.error(err);
-    }).then(function () {
-      ui.png.disabled = false;
-    });
+    // One at a time: two canvases this size at once is a lot of memory on a
+    // phone, and browsers are happier being handed downloads in sequence.
+    var queue = workspace.templates.slice();
+    (function next() {
+      if (!queue.length) {
+        ui.png.disabled = false;
+        if (workspace.templates.length > 1) ui.exportStatus.textContent = 'Both exported.';
+        return;
+      }
+      exportOne(queue.shift(), null).then(function () { setTimeout(next, 400); });
+    })();
   };
 
   ui.svg.onclick = function () {
-    var template = state.template;
-    if (!template) return;
-    var svg = buildExportSVG(template);
-    saveBlob(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }),
-      'frac-' + template.entry.id + '-' + stamp() + '.svg');
-    ui.exportStatus.textContent = 'SVG saved with the fonts embedded.';
+    var workspace = state.workspace;
+    if (!workspace) return;
+    workspace.templates.forEach(function (template, i) {
+      setTimeout(function () { downloadSVG(template); }, i * 400);
+    });
   };
 
   /* ----------------------------------------------------------------- boot */
@@ -1199,13 +1375,12 @@
       .then(function () { return fetchText(MANIFEST_URL); })
       .then(function (text) {
         state.manifest = JSON.parse(text);
-        var entries = state.manifest.templates || [];
-        buildPicker(state.manifest);
-        ui.pickerStatus.textContent = entries.length + ' templates. Nothing you type leaves this browser.';
-        // index.html#post opens straight into that template.
+        var entries = buildPicker(state.manifest);
+        ui.pickerStatus.textContent = entries.length + ' to choose from. Nothing you type leaves this browser.';
+        // index.html#event opens straight into that editor.
         var wanted = decodeURIComponent(location.hash.slice(1));
         var direct = entries.filter(function (e) { return e.id === wanted; })[0];
-        if (direct) openTemplate(direct, null);
+        if (direct) openWorkspace(direct, null);
       })
       .catch(function (err) {
         console.error(err);

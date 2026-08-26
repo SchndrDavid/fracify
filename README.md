@@ -19,13 +19,20 @@ redraws artwork. The picker groups them the way the manifest says.
 
 | Group | Template | Size | What changes |
 | --- | --- | --- | --- |
-| Instagram | Instagram post | 1080 × 1080 | two photos, place, time, theme, day, month |
-| Instagram | Instagram story | 1080 × 1920 | two photos, place, time, theme, day, month |
+| Instagram | Post + story | 1080 × 1080 and 1080 × 1920 | two photos, place, time, theme, day, month |
 | Announcement | Announcement | 1080 × 1920 | photo, a two-line message |
 | Presentation | Cover | 1080 × 1080 | four separate lines |
 | Presentation | Discussion 1 / 2 | 1080 × 1080 | title and three question blocks |
 | Presentation | Speed dating 1 / 2 | 1080 × 1080 | title and three question blocks |
 | Presentation | Vocabulary | 1080 × 1080 | title and ten French/Czech pairs |
+
+The post and the story always carry the same words, so they are one entry:
+filling them in twice was only ever a way to get them out of step. A `pair` in
+the manifest opens several templates in one editor, where every field drives the
+slot of the same name in each of them, each preview updates as you type, and
+either one can be exported on its own or both at once. The photo is cropped once
+per template, so the same picture is framed for a square and for a
+nine-by-sixteen without being uploaded twice.
 
 The presentation templates share a fixed background, which is not offered for
 replacement. Groups, their order and the order of the templates inside them all
@@ -101,16 +108,24 @@ That is the same thing Affinity's "convert to curves" does on export. It only
 touches the text elements set in that font, leaves the rest of the file byte for
 byte alone, and never puts the font in the repo.
 
-**Affinity flattens the photo layers on export.** The post is built from a
-photo across the whole canvas and a straight-edged cutout of a second one over
-it. The export rasterises both into a single `<image>`, leaving one photo to
-address instead of two and the join frozen into the pixels.
-`tools/split-photo-layer.py` fits the straight edge between the two flat
-regions of the placeholder, turns it into a `clipPath`, and makes the single
-`<use>` into two — the layer underneath and the cutout on top. Both start out
-pointing at the same bitmap, so the template renders exactly as before until a
-photo goes into one of them. It refuses anything whose join is not a straight
-line between two flat colours.
+**A rectangle has nowhere to put a photo.** The post is built from a photo
+across the whole canvas and a straight-edged cutout of a second one over it.
+Exported cleanly those arrive as two plain `<rect>`s — and both covering
+everything, because the cut that makes the upper one a cutout does not survive
+either. `tools/photo-slots.py` turns each rectangle into an `<image>` of the
+same geometry holding a swatch of its colour, so there is something whose data
+can be replaced, and rewrites the upper one's clip from a full-canvas rectangle
+to the straight cut. (`tools/split-photo-layer.py` does the same job for an
+export where the two layers were rasterised into a single bitmap: it fits the
+edge between the two flat regions and splits the element in two.)
+
+**Affinity bakes kerning against its own cut of Metropolis.** Every heading
+comes out with tspans pinning individual glyphs to absolute positions worked out
+against the exact font file the designer has installed. Any other build lays the
+run out a hair narrower, the pinned glyph stays where it was told, and a gap
+opens mid-word — "patr o" instead of "patro". The app rebuilds a line without
+tspans as soon as it is edited; `tools/strip-kerning.py` does the same to the
+template so the placeholder is right before anyone touches it.
 
 **Affinity flattens a translucent layer on export.** The blue panel on the post
 and the story is drawn over the photos at 80 % opacity. The SVG export
