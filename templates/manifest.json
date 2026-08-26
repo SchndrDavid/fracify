@@ -12,6 +12,12 @@
       "name": "Post + story",
       "group": "instagram",
       "pair": ["post", "story"]
+    },
+    {
+      "id": "annonce",
+      "name": "Post + story",
+      "group": "announcement",
+      "pair": ["fracad-post", "fracad-story"]
     }
   ],
   "templates": [
@@ -48,12 +54,24 @@
       ]
     },
     {
-      "id": "fracad",
-      "file": "fracad.svg",
-      "name": "Annonce",
+      "id": "fracad-post",
+      "file": "fracad-post.svg",
+      "name": "Annonce · post",
       "group": "announcement",
+      "hidden": true,
       "slots": [
-        { "id": "photo", "label": "Photo", "image": "_Image2", "hint": "Occupe toute la story." },
+        { "id": "photo", "label": "Photo", "image": "_Image1", "hint": "Occupe tout le fond, derrière le bandeau rouge." },
+        { "id": "message", "label": "Message", "texts": [0, 1], "placeholder": "Votre message en deux lignes", "maxWidth": 930, "align": "center", "maxLines": 2 }
+      ]
+    },
+    {
+      "id": "fracad-story",
+      "file": "fracad-story.svg",
+      "name": "Annonce · story",
+      "group": "announcement",
+      "hidden": true,
+      "slots": [
+        { "id": "photo", "label": "Photo", "image": "_Image2", "hint": "Occupe tout le fond, derrière le bandeau rouge." },
         { "id": "message", "label": "Message", "texts": [0, 1], "placeholder": "Votre message en deux lignes", "maxWidth": 930, "align": "center", "maxLines": 2 }
       ]
     },

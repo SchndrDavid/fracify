@@ -25,6 +25,7 @@
   var SOURCE_MAX_SIDE = 2200; // uploads are downscaled to this before cropping
   var PERSIST_MAX_SIDE = 1400;
   var JPEG_QUALITY = 0.92;
+  var PAN_ROOM = 0.25;        // how far past the fit an offset may scale to make room
 
   /* ---------------------------------------------------------------- helpers */
 
@@ -602,8 +603,8 @@
   /* Centre-crop and fill, never letterbox: the aspect ratio of an upload
    * practically never matches the slot, and empty margins always look wrong.
    * Zoom pushes in past that fit and the two offsets slide the visible window
-   * around inside the slack it leaves, so the part of the photo worth showing
-   * can be put where the design leaves room for it.
+   * around inside the slack, so the part of the photo worth showing can be put
+   * where the design leaves room for it.
    *
    * Blur is drawn into the bitmap rather than layered over it, because these
    * photos sit behind a panel of text and softening them is what makes the
@@ -617,7 +618,19 @@
     var width = targetWidth + pad * 2;
     var height = targetHeight + pad * 2;
 
-    var scale = Math.max(width / source.width, height / source.height) * (framing.zoom / 100);
+    /* A cover fit leaves slack in one direction only: whichever side the
+     * photograph is long on hangs over the slot, and the other one meets it
+     * exactly. The slider for that second axis then has nothing to slide, and
+     * which of the two it is depends on the upload and on the slot - the same
+     * photograph has room sideways in the square post and none in the tall
+     * story. So the crop may scale past the fit, by up to PAN_ROOM of the
+     * slot and only as far as the slider is actually pushed, to open the room
+     * it asks for. Both sliders centred means no extra scale at all, and the
+     * plain centred cover crop the template has always had. */
+    var cover = Math.max(width / source.width, height / source.height);
+    var roomX = width * (1 + PAN_ROOM * Math.abs(framing.offsetX) / 100) / source.width;
+    var roomY = height * (1 + PAN_ROOM * Math.abs(framing.offsetY) / 100) / source.height;
+    var scale = Math.max(cover * (framing.zoom / 100), roomX, roomY);
     var drawWidth = source.width * scale;
     var drawHeight = source.height * scale;
     var slackX = Math.max(0, drawWidth - width);

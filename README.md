@@ -156,6 +156,17 @@ behind` over the panel's pixels, then writes the layer back as its own colour at
 its own opacity. It refuses to touch a panel that does not turn out to be one
 flat colour.
 
+**Affinity draws a shape's stroke into the bitmap it rasterises.** The same blue
+panel is a rounded rectangle with a one-pixel white stroke, and the stroke ends
+up inside the PNG, where no amount of editing the SVG reaches it — the panel
+carries a thin white rim that belongs to no layer anyone can turn off.
+`tools/strip-outline.py` works on the pixels instead: a bitmap whose opaque area
+is one flat colour is a plate, and any lighter pixel sitting on its edge is the
+stroke. Those pixels keep their alpha, so the shape and its anti-aliasing are
+exactly as they were, and take the plate's own colour. Only the rim is looked at,
+never the middle, which is what keeps the tool off the sponsor logos — those are
+white on blue too, but their white is inside the shape rather than around it.
+
 **The root has no pixel size.** The templates say `width="100%" height="100%"`,
 which Safari renders blank or badly scaled once the file is in an `<img>`. The
 root is pinned to the `viewBox` size before anything is drawn.
@@ -225,7 +236,7 @@ python3 tools/make-thumbs.py                   # redraw the picker thumbnails
 
 ```sh
 pip install pillow
-python3 tools/fidelity-test.py                 # all nine templates
+python3 tools/fidelity-test.py                 # all ten templates
 python3 tools/fidelity-test.py post --stress   # plus a long-text pass
 ```
 
@@ -244,10 +255,20 @@ you actually see:
 
 | Slider | Range | What it does |
 | --- | --- | --- |
-| X | −100…100 % | slides the crop left or right, if the framing leaves any slack |
+| X | −100…100 % | slides the crop left or right |
 | Y | −100…100 % | the same vertically, which portraits usually need |
-| Zoom | 100…250 % | pushes in past the fill, which is what creates the slack for X and Y |
+| Zoom | 100…250 % | pushes in past the fill, so more of the photo can be reached |
 | Blur | 0…40 px | softens the photo behind the panel so the text on top stays readable |
+
+A crop that fills its slot has slack in one direction only: whichever side the
+photograph is long on hangs over the slot, and the other one meets it exactly.
+The slider for that second axis would then have nothing to slide — and which of
+the two it is depends on the upload and on the slot, so the same photograph has
+room sideways in the square post and none in the tall story. So a slider that is
+pushed into an axis with no slack is allowed to scale the crop past the fill, by
+up to a quarter of the slot and only as far as it is actually pushed. Both
+sliders centred means no extra scale at all, and the plain centred crop the
+template has always had.
 
 Blur is drawn into the bitmap rather than layered over it, and the crop is
 rendered with a margin of three times the radius that is thrown away afterwards,
@@ -257,9 +278,8 @@ downscale-and-upscale that looks the same behind a panel.
 
 ## Known quirk
 
-The placeholder text in the post, story and announcement templates can show a
-small gap where Affinity pinned a single glyph with a `tspan` — "patr o" instead
-of "patro". That gap is in the exported file itself and shows up in any browser,
+The placeholder text in the presentation templates can show a small gap where
+Affinity pinned a single glyph with a `tspan` — "patr o" instead of "patro". That gap is in the exported file itself and shows up in any browser,
 because the pinned position assumes the exact cut of Metropolis the designer had
 installed. Typing over the field fixes it: an edited line is rebuilt without the
 pinned positions.
