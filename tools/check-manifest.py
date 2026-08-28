@@ -22,6 +22,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TEMPLATES = os.path.join(ROOT, "templates")
 SVG = "{http://www.w3.org/2000/svg}"
 SERIF = "{http://www.serif.com/}"
+XLINK = "{http://www.w3.org/1999/xlink}"
 SLOT_PREFIX = "slot:"
 
 
@@ -62,15 +63,60 @@ def show(template_id, entry):
         print("    %-10s %s x %s" % (element.get("id"), element.get("width"), element.get("height")))
 
 
+def check_placement(root, images, wanted, where, problems):
+    """A photo slot has to be the box it is drawn in.
+
+    The app crops an upload to the <image>'s own width and height and writes
+    the result straight into it. An Affinity export that parks the bitmap in
+    <defs> and draws it through a scaled <use> still looks right, but those
+    dimensions are then the source file's pixels rather than the frame on the
+    artboard: the crop is cut to the wrong shape, only a window of it lands in
+    the frame, and the framing sliders push the photo somewhere the eye cannot
+    follow. Placing the <image> itself, sized to the box it fills, is what the
+    app reads.
+    """
+    if not wanted:
+        return
+    parent = {child: node for node in root.iter() for child in node}
+    referenced = set()
+    for element in root.iter():
+        if element.tag == SVG + "use":
+            href = element.get(XLINK + "href") or element.get("href") or ""
+            referenced.add(href.lstrip("#"))
+    for element in images:
+        image_id = element.get("id")
+        if image_id not in wanted:
+            continue
+        node = parent.get(element)
+        in_defs = False
+        while node is not None:
+            if node.tag == SVG + "defs":
+                in_defs = True
+                break
+            node = parent.get(node)
+        if in_defs or image_id in referenced:
+            problems.append('%s: the photo slot <image id="%s"> is %s - place it on the '
+                            "artboard, sized to the frame it fills, or the crop is cut to "
+                            "the source file's shape instead of the frame's"
+                            % (where, image_id,
+                               "defined in <defs> and drawn through <use>" if in_defs
+                               else "drawn through <use>"))
+
+
 def check(entry, problems):
     where = entry.get("id", "?")
     path = os.path.join(TEMPLATES, entry.get("file", ""))
     if not os.path.exists(path):
         problems.append("%s: %s does not exist" % (where, entry.get("file")))
         return
-    _, texts, images, slot_names = parse(path)
+    root, texts, images, slot_names = parse(path)
     if slot_names:
-        return  # the file names its own slots; the manifest mapping is unused
+        # The file names its own slots, so the manifest mapping is unused - but
+        # a named image layer has to be placed like any other photo slot.
+        named = set(e.get("id") for e in images
+                    if (e.get(SERIF + "id") or e.get("id") or "").startswith(SLOT_PREFIX))
+        check_placement(root, images, named, where, problems)
+        return
 
     slots = entry.get("slots") or []
     if not slots:
@@ -79,6 +125,9 @@ def check(entry, problems):
         return
 
     image_ids = set(e.get("id") for e in images)
+    check_placement(root, images,
+                    set(d["image"] for d in slots if d.get("image")) & image_ids,
+                    where, problems)
     used = {}
     for slot in slots:
         slot_id = slot.get("id")

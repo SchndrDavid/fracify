@@ -130,6 +130,19 @@ to the straight cut. (`tools/split-photo-layer.py` does the same job for an
 export where the two layers were rasterised into a single bitmap: it fits the
 edge between the two flat regions and splits the element in two.)
 
+**A photo slot has to be the frame, not the file.** An upload is cropped to the
+width and height of the `<image>` it is written into, so those have to be the
+box the photo fills on the artboard. Affinity sometimes exports a placed
+photograph the other way round — the bitmap parked in `<defs>` at its own pixel
+size, drawn through a scaled `<use>` — which looks identical on screen but
+leaves the app cutting a crop to the shape of the source file and dropping it
+into a frame that shows no more than a window of it. The two announcement
+templates arrived that way, and it is what made their framing sliders pan and
+zoom mostly off-screen while the post and the story behaved. The `<image>`
+placed itself, at `0,0` over the artboard and with
+`preserveAspectRatio="xMidYMid slice"`, is what the app reads;
+`tools/check-manifest.py` now fails a photo slot left in `<defs>`.
+
 **SVG cannot fill one shape with three colours.** The plate behind the
 wordmark is the French flag, so a clean export writes the whole thing as
 `fill:white` and the flag is gone. `tools/fill-shape.py` keeps the path exactly
