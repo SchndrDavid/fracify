@@ -271,7 +271,7 @@ you actually see:
 | --- | --- | --- |
 | X | −100…100 % | slides the crop left or right |
 | Y | −100…100 % | the same vertically, which portraits usually need |
-| Zoom | 100…250 % | pushes in past the fill, so more of the photo can be reached |
+| Zoom | −100…150 % | 0 is the plain fill; up pushes in past it, down pulls back to the whole photo |
 | Blur | 0…40 px | softens the photo behind the panel so the text on top stays readable |
 
 A crop that fills its slot has slack in one direction only: whichever side the
@@ -283,6 +283,15 @@ pushed into an axis with no slack is allowed to scale the crop past the fill, by
 up to a quarter of the slot and only as far as it is actually pushed. Both
 sliders centred means no extra scale at all, and the plain centred crop the
 template has always had.
+
+Zoom below 0 goes the other way and pulls the photo back off the edges of its
+slot, down to the whole photograph in view at −100. It stops there because past
+that point there is nothing further to reveal, only more margin; a photograph
+already shaped like its slot has nothing to give, so the far end of the slider
+is never less than half the fill either. What is left around a pulled-back photo
+is filled with white — the crop is encoded as a JPEG, which has no transparency,
+so the alternative would be black — and the photo sits centred in it, since only
+an overhang is something the X and Y sliders can slide.
 
 Blur is drawn into the bitmap rather than layered over it, and the crop is
 rendered with a margin of three times the radius that is thrown away afterwards,

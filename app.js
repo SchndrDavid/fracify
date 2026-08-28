@@ -289,7 +289,7 @@
       height: Math.round(len(image.getAttribute('height'), 1080)),
       offsetX: 0,
       offsetY: 0,
-      zoom: 100,
+      zoom: 0,
       blur: 0,
       frame: 0,
       source: null,
@@ -651,7 +651,9 @@
    * practically never matches the slot, and empty margins always look wrong.
    * Zoom pushes in past that fit and the two offsets slide the visible window
    * around inside the slack, so the part of the photo worth showing can be put
-   * where the design leaves room for it.
+   * where the design leaves room for it. Zoom also pulls back the other way,
+   * down to the whole photograph on a white ground, for the upload that only
+   * makes sense entire.
    *
    * Blur is drawn into the bitmap rather than layered over it, because these
    * photos sit behind a panel of text and softening them is what makes the
@@ -675,9 +677,23 @@
      * it asks for. Both sliders centred means no extra scale at all, and the
      * plain centred cover crop the template has always had. */
     var cover = Math.max(width / source.width, height / source.height);
-    var roomX = width * (1 + PAN_ROOM * Math.abs(framing.offsetX) / 100) / source.width;
-    var roomY = height * (1 + PAN_ROOM * Math.abs(framing.offsetY) / 100) / source.height;
-    var scale = Math.max(cover * (framing.zoom / 100), roomX, roomY);
+    var zoom = framing.zoom || 0;
+    var scale;
+    if (zoom >= 0) {
+      var roomX = width * (1 + PAN_ROOM * Math.abs(framing.offsetX) / 100) / source.width;
+      var roomY = height * (1 + PAN_ROOM * Math.abs(framing.offsetY) / 100) / source.height;
+      scale = Math.max(cover * (1 + zoom / 100), roomX, roomY);
+    } else {
+      /* Pulling back stops where the whole photograph is in the slot, because
+       * past that point there is nothing further to reveal - only more margin.
+       * A photograph shaped like its slot would have nothing to give at all,
+       * so the far end of the slider is never less than half the fill either,
+       * and the two offsets ask for no extra scale down here: there is already
+       * room to spare. */
+      var contain = Math.min(width / source.width, height / source.height);
+      var pulled = Math.min(contain, cover / 2);
+      scale = cover + (cover - pulled) * (zoom / 100);
+    }
     var drawWidth = source.width * scale;
     var drawHeight = source.height * scale;
     var slackX = Math.max(0, drawWidth - width);
@@ -688,9 +704,18 @@
     canvas.height = height;
     var ctx = canvas.getContext('2d');
     ctx.imageSmoothingQuality = 'high';
+    /* The crop is encoded as a JPEG, which has no transparency, so a photo
+     * pulled back off the edges of its slot would leave black. White is the
+     * one margin that reads as deliberate. */
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, width, height);
+    /* Centred on both axes - which is the familiar -slack / 2 wherever the
+     * photo hangs over the slot, and half the leftover margin where it no
+     * longer reaches. Only the overhang can be slid, so a pulled-back photo
+     * simply sits in the middle. */
     drawBlurred(ctx, source,
-      -slackX / 2 + (framing.offsetX / 100) * (slackX / 2),
-      -slackY / 2 + (framing.offsetY / 100) * (slackY / 2),
+      (width - drawWidth) / 2 + (framing.offsetX / 100) * (slackX / 2),
+      (height - drawHeight) / 2 + (framing.offsetY / 100) * (slackY / 2),
       drawWidth, drawHeight, blur);
 
     if (pad) {
@@ -808,7 +833,7 @@
           src: field.persistUrl,
           x: field.offsetX,
           y: field.offsetY,
-          zoom: field.zoom,
+          z: field.zoom,
           blur: field.blur,
           name: field.fileName
         };
@@ -1013,7 +1038,7 @@
             fontSize: slot.fontSize,
             original: slot.original,
             placeholder: slot.placeholder,
-            offsetX: 0, offsetY: 0, zoom: 100, blur: 0, frame: 0,
+            offsetX: 0, offsetY: 0, zoom: 0, blur: 0, frame: 0,
             source: null, persistUrl: null, fileName: ''
           };
           order.push(field);
@@ -1085,7 +1110,10 @@
         field.pendingPhoto = photo || null;
         field.offsetX = photo ? (photo.x || 0) : 0;
         field.offsetY = photo ? (photo.y || 0) : 0;
-        field.zoom = photo && photo.zoom ? photo.zoom : 100;
+        /* Zoom used to be a percentage of the fill that started at 100 and
+         * only ever grew; it is now signed, and centred on the fill at 0. A
+         * state saved under the old name is carried over rather than dropped. */
+        field.zoom = photo ? (photo.z || (photo.zoom ? photo.zoom - 100 : 0)) : 0;
         field.blur = photo ? (photo.blur || 0) : 0;
         field.fileName = photo ? (photo.name || 'photo enregistrée') : '';
       }
@@ -1322,8 +1350,10 @@
       format: function (v) { return shift(v, 'droite', 'gauche'); } },
     { key: 'offsetY', label: 'Y', min: -100, max: 100,
       format: function (v) { return shift(v, 'bas', 'haut'); } },
-    { key: 'zoom', label: 'Zoom', min: 100, max: 250,
-      format: function (v) { return v + ' %'; } },
+    { key: 'zoom', label: 'Zoom', min: -100, max: 150,
+      format: function (v) {
+        return v === 0 ? 'plein cadre' : (v > 0 ? '+' : '−') + Math.abs(v) + ' %';
+      } },
     { key: 'blur', label: 'Flou', min: 0, max: 40,
       format: function (v) { return v ? v + ' px' : 'aucun'; } }
   ];
@@ -1429,7 +1459,7 @@
         field.persistUrl = null;
         field.offsetX = 0;
         field.offsetY = 0;
-        field.zoom = 100;
+        field.zoom = 0;
         field.blur = 0;
         field.fileName = '';
         field.pendingPhoto = null;
