@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>working…</title></head>
+<body>
+<pre id="out"></pre>
+<script>
+(function () {
+  var ids = ['picker','picker-grid','picker-status','editor','editor-title','editor-kind',
+             'fields','stage','notice','export-status','btn-back','btn-reset','btn-png','btn-svg'];
+  var hidden = document.createElement('div');
+  hidden.style.cssText = 'position:absolute;left:-99999px;top:0';
+  ids.forEach(function (id) { var n = document.createElement('div'); n.id = id; hidden.appendChild(n); });
+  document.body.appendChild(hidden);
+  window.FRACIFY_TEMPLATE_DIR = '../templates/';
+  window.FRACIFY_NO_BOOT = true;
+})();
+</script>
+<script src="../app.js"></script>
+<script>
+(function () {
+  var log = [];
+  function say(s) { log.push(s); document.getElementById('out').textContent = log.join('\n'); }
+
+  function photo(w, h) {
+    var c = document.createElement('canvas'); c.width = w; c.height = h;
+    var x = c.getContext('2d');
+    var g = x.createLinearGradient(0, 0, w, h);
+    g.addColorStop(0, '#1d7a4f'); g.addColorStop(1, '#7a1d5f');
+    x.fillStyle = g; x.fillRect(0, 0, w, h);
+    x.strokeStyle = 'rgba(255,255,255,.6)'; x.lineWidth = 3;
+    for (var i = 0; i <= w; i += 80) { x.beginPath(); x.moveTo(i,0); x.lineTo(i,h); x.stroke(); }
+    for (var j = 0; j <= h; j += 80) { x.beginPath(); x.moveTo(0,j); x.lineTo(w,j); x.stroke(); }
+    return c;
+  }
+
+  function decode(url) {
+    return new Promise(function (res, rej) {
+      var im = new Image(); im.onload = function () { res(im); }; im.onerror = rej; im.src = url;
+    });
+  }
+  function pixels(im) {
+    var c = document.createElement('canvas');
+    c.width = 120; c.height = Math.max(1, Math.round(120 * im.height / im.width));
+    var x = c.getContext('2d'); x.drawImage(im, 0, 0, c.width, c.height);
+    return x.getImageData(0, 0, c.width, c.height).data;
+  }
+  function diff(a, b) {
+    var sum = 0;
+    for (var i = 0; i < a.length; i += 4) sum += Math.abs(a[i]-b[i]) + Math.abs(a[i+1]-b[i+1]) + Math.abs(a[i+2]-b[i+2]);
+    return (sum / (a.length / 4 * 3)).toFixed(1);
+  }
+
+  var manifest;
+  fetch('../templates/manifest.json').then(function (r) { return r.json(); }).then(function (m) {
+    manifest = m;
+    var wanted = ['fracad-post','fracad-story','post','story'];
+    return Promise.all(wanted.map(function (id) {
+      return Fracify.loadTemplate(m.templates.filter(function (t) { return t.id === id; })[0]);
+    }));
+  }).then(function (ts) {
+    ts.forEach(function (t) {
+      var host = document.createElement('div');
+      host.style.cssText = 'position:absolute;left:-99999px;width:' + t.width + 'px';
+      document.body.appendChild(host);
+      Fracify.mount(t, host);
+    });
+    var pairs = [
+      { name: 'ANNONCE', slots: [ts[0].slots[0], ts[1].slots[0]], labels: ['fracad-post','fracad-story'] },
+      { name: 'INSTAGRAM (photo-top)', slots: [ts[2].slots[0], ts[3].slots[0]], labels: ['post','story'] },
+      { name: 'INSTAGRAM (photo-bottom)', slots: [ts[2].slots[1], ts[3].slots[1]], labels: ['post','story'] }
+    ];
+    var shapes = [ [1600, 900], [900, 1200] ];
+    var chain = Promise.resolve();
+    shapes.forEach(function (shape) {
+      pairs.forEach(function (pair) {
+        chain = chain.then(function () {
+          var field = { members: pair.slots, offsetX: 0, offsetY: 0, zoom: 0, blur: 0 };
+          Fracify.adoptImage(field, photo(shape[0], shape[1]));
+          say('\n== ' + pair.name + '  photo ' + shape[0] + 'x' + shape[1]);
+          pair.slots.forEach(function (s, i) { say('   ' + pair.labels[i] + ' slot ' + s.id + ' frame ' + s.width + 'x' + s.height); });
+          var cases = [ ['base',0,0], ['X-100',-100,0], ['X+100',100,0], ['Y-100',0,-100], ['Y+100',0,100] ];
+          var shots = {};
+          var inner = Promise.resolve();
+          cases.forEach(function (c) {
+            inner = inner.then(function () {
+              field.offsetX = c[1]; field.offsetY = c[2];
+              Fracify.applyPhoto(field);
+              return Promise.all(pair.slots.map(function (s) {
+                return decode(s.liveImage.getAttribute('xlink:href') || s.liveImage.getAttribute('href')).then(pixels);
+              })).then(function (px) { shots[c[0]] = px; });
+            });
+          });
+          return inner.then(function () {
+            ['X-100','X+100','Y-100','Y+100'].forEach(function (k) {
+              var line = '   ' + k + ' :';
+              pair.labels.forEach(function (lab, i) {
+                line += '  ' + lab + ' Δ=' + diff(shots.base[i], shots[k][i]);
+              });
+              say(line);
+            });
+          });
+        });
+      });
+    });
+    return chain;
+  }).then(function () { say('\nDONE'); document.title = 'ready'; })
+    .catch(function (e) { say('ERROR ' + (e && e.stack || e)); document.title = 'ready'; });
+})();
+</script>
+</body></html>
