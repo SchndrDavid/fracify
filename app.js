@@ -72,7 +72,9 @@
   function round(n) { return Math.round(n * 1000) / 1000; }
 
   function fetchText(url) {
-    return fetch(url).then(function (res) {
+    // Revalidate every time: Firefox-based browsers otherwise keep serving a
+    // stale template even after a hard reload.
+    return fetch(url, { cache: 'no-cache' }).then(function (res) {
       if (!res.ok) throw new Error(url + ' → HTTP ' + res.status);
       return res.text();
     });
