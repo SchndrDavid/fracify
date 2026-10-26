@@ -492,7 +492,9 @@
   function wrapParagraphs(value, measure, maxWidth) {
     var lines = [];
     value.split('\n').forEach(function (paragraph) {
-      var words = paragraph.split(/\s+/).filter(Boolean);
+      // A no-break space - French puts one inside « » and before ? or ! -
+      // keeps its neighbours on the same line.
+      var words = paragraph.split(/[^\S\u00a0\u202f]+/).filter(Boolean);
       if (!words.length) { lines.push({ text: '', width: 0 }); return; }
       var current = '';
       words.forEach(function (word) {
@@ -1000,8 +1002,8 @@
   }
 
   /* What comes after this one in its own group, wrapping at the end. A
-   * presentation is six templates in a row, and going back to the picker
-   * between each of them is five clicks nobody needs. */
+   * presentation is seven templates in a row, and going back to the picker
+   * between each of them is six clicks nobody needs. */
   function nextInGroup(entry) {
     var siblings = (state.entries || []).filter(function (other) {
       return other.group === entry.group;

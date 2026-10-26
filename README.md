@@ -18,7 +18,7 @@ to the browser console stay in English.
 
 ## The templates
 
-Nine templates ship with it, all exported from Affinity Designer. They are the
+Eleven templates ship with it, all exported from Affinity Designer. They are the
 source of truth — the app only substitutes text and swaps image data, it never
 redraws artwork. The picker groups them the way the manifest says.
 
@@ -30,11 +30,12 @@ redraws artwork. The picker groups them the way the manifest says.
 | Presentation | Discussion 1 / 2 | 1080 × 1080 | title and three question blocks |
 | Presentation | Speed dating 1 / 2 | 1080 × 1080 | title and three question blocks |
 | Presentation | Vocabulary | 1080 × 1080 | title and ten French/Czech pairs |
+| Presentation | Grand débat | 1080 × 1080 | banner, two-line title, the debate question |
 
 Every field opens on a French placeholder rather than on the last real post,
 so nothing has to be cleared before it can be filled in. Inside a group, a
 **Suivant** button in the top bar walks to the following template, which is how
-you get through the six presentation slides without going back to the picker
+you get through the seven presentation slides without going back to the picker
 between each one.
 
 The post and the story always carry the same words, so they are one entry:
@@ -263,7 +264,7 @@ python3 tools/make-thumbs.py                   # redraw the picker thumbnails
 
 ```sh
 pip install pillow
-python3 tools/fidelity-test.py                 # all ten templates
+python3 tools/fidelity-test.py                 # all eleven templates
 python3 tools/fidelity-test.py post --stress   # plus a long-text pass
 ```
 

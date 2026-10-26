@@ -162,6 +162,17 @@
         { "id": "w10-fr", "label": "10 · français", "texts": [17], "placeholder": "le mot français", "maxWidth": 370, "align": "center", "maxLines": 1 },
         { "id": "w10-cs", "label": "10 · tchèque", "texts": [18], "placeholder": "český překlad", "maxWidth": 370, "align": "center", "maxLines": 1 }
       ]
+    },
+    {
+      "id": "debat",
+      "file": "debat.svg",
+      "name": "Grand débat",
+      "group": "presentation",
+      "slots": [
+        { "id": "label", "label": "Bandeau", "texts": [0], "placeholder": "GRANDE DÉBAT", "maxWidth": 440, "align": "center", "centre": 540, "maxLines": 1 },
+        { "id": "title", "label": "Titre", "texts": [1, 2], "placeholder": "HALLOWEEN VS\nLA TOUSSAINT", "maxWidth": 860, "align": "center", "centre": 540, "vcentre": true, "maxLines": 2 },
+        { "id": "question", "label": "Question du débat", "texts": [3, 4, 5], "placeholder": "« On devrait fêter la vie et s’amuser à Halloween plutôt que d’être triste à la Toussaint »", "maxWidth": 760, "align": "center", "centre": 540, "vcentre": true, "maxLines": 5 }
+      ]
     }
 
   ]
